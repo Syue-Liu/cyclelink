@@ -105,6 +105,10 @@
   .ci-del { background: none; border: none; color: var(--muted); font-size: 16px; cursor: pointer; padding: 4px; }
   .ci-meta { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 4px; }
   .ci-note { font-size: 13px; color: var(--text); margin-top: 6px; line-height: 1.5; opacity: 0.9; }
+  .ride-basic-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; margin: 12px 0; }
+  .ride-basic { background: rgba(255,255,255,0.055); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 10px; min-width: 0; }
+  .ride-basic-lbl { color: var(--muted); font-size: 11px; margin-bottom: 4px; }
+  .ride-basic-val { color: var(--text); font-size: 13px; font-weight: 800; word-break: break-word; }
   .weather-pick { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin: 8px 0; }
   .wp-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 9px; padding: 8px 4px; text-align: center; cursor: pointer; font-size: 11px; color: var(--muted); }
   .wp-btn.sel { border-color: var(--teal); background: rgba(56,217,199,0.14); color: var(--text); }
@@ -274,9 +278,11 @@
       <div class="ss-box"><div class="ss-val" id="rPts">0</div><div class="ss-lbl">軌跡點</div></div>
       <div class="ss-box"><div class="ss-val" id="rCheck">0</div><div class="ss-lbl">打卡數</div></div>
     </div>
+    <div class="field-lbl">基本資料</div>
+    <div class="ride-basic-grid" id="rideBasicGrid"></div>
     <div class="field-lbl">這趟的名稱</div>
     <input type="text" id="rideName" placeholder="例如：河濱半日遊" maxlength="40">
-    <button class="btn btn-teal" onclick="saveRide()">💾 儲存這趟路線</button>
+    <button class="btn btn-teal" onclick="saveRide()">💾 儲存完整騎乘紀錄</button>
     <button class="btn btn-blue" onclick="exportRideImage()">🖼 下載路線圖片</button>
     <button class="btn btn-ghost" onclick="closeRouteModal()">關閉</button>
   </div>
@@ -552,6 +558,10 @@ function fmtNow(){
   const d=new Date();const wd=['日','一','二','三','四','五','六'][d.getDay()];
   return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（${wd}）${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 }
+function fmtTime(ts){
+  const d=new Date(ts);const wd=['日','一','二','三','四','五','六'][d.getDay()];
+  return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（${wd}）${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
 let pickedWeather='partly';
 function openCheckinModal(){
   document.getElementById('ciName').value='';
@@ -653,8 +663,12 @@ function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').
 let routeMap=null,lastRideStats=null;
 function finishRide(){
   if(trackPoints.length<2){alert('軌跡太短，還無法產生路線圖');return;}
-  const secs=Math.floor((pausedTime||(Date.now()-sessionStart))/1000);
+  const endedTs=Date.now();
+  const startedTs=sessionStart||trackPoints[0][2]||endedTs;
+  const secs=Math.max(1,Math.floor((pausedTime||(endedTs-startedTs))/1000));
   const hrs=secs/3600;
+  const rideCheckins=checkins.filter(c=>c.id>=startedTs&&c.id<=endedTs);
+  const start=trackPoints[0],end=trackPoints[trackPoints.length-1];
   const stats={
     dist:+totalDist.toFixed(2),
     timeStr:`${Math.floor(secs/60)}:${String(secs%60).padStart(2,'0')}`,
@@ -663,8 +677,18 @@ function finishRide(){
     max:Math.round(maxSpeed),
     pts:trackPoints.length,
     track:trackPoints.slice(),
-    checkCount:checkins.filter(c=>c.lat!=null).length,
-    date:fmtNow()
+    checkCount:rideCheckins.length,
+    checkinIds:rideCheckins.map(c=>c.id),
+    rider:myNickname||'騎士',
+    date:fmtNow(),
+    startedAt:fmtTime(startedTs),
+    endedAt:fmtTime(endedTs),
+    startedTs,
+    endedTs,
+    weather:curWeather.key||'partly',
+    temp:curWeather.temp,
+    startPoint:{lat:start[0],lng:start[1]},
+    endPoint:{lat:end[0],lng:end[1]}
   };
   lastRideStats=stats;
   document.getElementById('rDist').textContent=stats.dist.toFixed(2);
@@ -674,6 +698,7 @@ function finishRide(){
   document.getElementById('rPts').textContent=stats.pts;
   document.getElementById('rCheck').textContent=stats.checkCount;
   document.getElementById('rideName').value='';
+  renderRideBasics(stats);
   document.getElementById('routeModalSub').textContent=`${stats.date} · 共 ${stats.dist} 公里`;
   document.getElementById('routeModal').classList.remove('hidden');
   setTimeout(()=>drawRouteMap(stats.track),150);
@@ -708,6 +733,28 @@ function drawRouteMap(track){
   if(gapInfo)gapInfo.textContent=gapCount>0?`⚠️ 偵測到 ${gapCount} 段可能因關螢幕中斷（黃色虛線為推測直線）`:'✅ 全程連續記錄，無中斷';
 }
 function closeRouteModal(){document.getElementById('routeModal').classList.add('hidden');}
+function coordText(p){
+  if(!p||p.lat==null||p.lng==null)return '未記錄';
+  return `${Number(p.lat).toFixed(5)}, ${Number(p.lng).toFixed(5)}`;
+}
+function rideWeatherText(r){
+  const w=WEATHER_MAP[r.weather]||WEATHER_MAP.partly;
+  return `${w.emoji} ${w.desc}${r.temp!=null?' '+r.temp+'°C':''}`;
+}
+function renderRideBasics(r){
+  const grid=document.getElementById('rideBasicGrid');if(!grid)return;
+  const rows=[
+    ['騎乘者',r.rider||'未命名'],
+    ['開始',r.startedAt||'未記錄'],
+    ['結束',r.endedAt||r.date||'未記錄'],
+    ['天氣',rideWeatherText(r)],
+    ['起點',coordText(r.startPoint)],
+    ['終點',coordText(r.endPoint)],
+    ['打卡',`${r.checkCount||0} 筆`],
+    ['資料點',`${r.pts||0} 點`]
+  ];
+  grid.innerHTML=rows.map(([label,val])=>`<div class="ride-basic"><div class="ride-basic-lbl">${escHtml(label)}</div><div class="ride-basic-val">${escHtml(val)}</div></div>`).join('');
+}
 function saveRide(){
   if(!lastRideStats)return;
   const name=document.getElementById('rideName').value.trim()||('騎乘 '+lastRideStats.date);
@@ -783,8 +830,9 @@ function renderRides(){
   rides.forEach(r=>{
     const div=document.createElement('div');div.className='checkin-entry';
     div.innerHTML=`<div class="ci-head"><span class="ci-emoji">🚴</span><span class="ci-title">${escHtml(r.name)}</span><button class="ci-del" onclick="deleteRide(${r.id})">🗑</button></div>
-      <div class="ci-meta"><span>🗓 ${escHtml(r.date)}</span></div>
-      <div class="ci-meta"><span>📏 ${r.dist} km</span><span>⏱ ${r.timeStr}</span><span>⚡ 均速 ${r.avg}</span><span>🔥 最高 ${r.max}</span></div>
+      <div class="ci-meta"><span>🗓 ${escHtml(r.startedAt||r.date)}</span><span>🏁 ${escHtml(r.endedAt||r.date)}</span></div>
+      <div class="ci-meta"><span>👤 ${escHtml(r.rider||'未命名')}</span><span>${escHtml(rideWeatherText(r))}</span></div>
+      <div class="ci-meta"><span>📏 ${r.dist} km</span><span>⏱ ${r.timeStr}</span><span>⚡ 均速 ${r.avg}</span><span>🔥 最高 ${r.max}</span><span>📍 ${r.checkCount||0} 打卡</span></div>
       <button class="btn btn-blue" style="margin-top:8px;" onclick='replayRide(${r.id})'>🗺 查看路線圖</button>`;
     box.appendChild(div);
   });
@@ -804,6 +852,7 @@ function replayRide(id){
   document.getElementById('rPts').textContent=r.pts;
   document.getElementById('rCheck').textContent=r.checkCount||0;
   document.getElementById('rideName').value=r.name;
+  renderRideBasics(r);
   document.getElementById('routeModalSub').textContent=`${r.date} · 共 ${r.dist} 公里`;
   document.getElementById('routeModal').classList.remove('hidden');
   setTimeout(()=>drawRouteMap(r.track),150);
