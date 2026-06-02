@@ -4,418 +4,890 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>CycleLink — 騎行對講</title>
+<title>Syue & Lynn 的騎乘日記</title>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   :root {
     --bg: #080d12; --surface: #111821; --surface2: #1a2430; --surface3: #202c38; --border: #2b3946;
-    --green: #4cd964; --green-dim: #15391f; --blue: #58a6ff; --teal: #38d9c7; --amber: #ffd166; --red: #ff5a5f;
-    --text: #f4f7fb; --muted: #93a4b5; --accent: #25b85a; --shadow: 0 18px 48px rgba(0,0,0,0.34);
+    --green: #4cd964; --green-dim: #15391f; --blue: #58a6ff; --teal: #38d9c7; --amber: #ffd166;
+    --red: #ff5a5f; --pink: #ff7eb6; --text: #f4f7fb; --muted: #93a4b5; --accent: #25b85a;
+    --shadow: 0 18px 48px rgba(0,0,0,0.34);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
     background:
-      radial-gradient(circle at 18% -10%, rgba(56,217,199,0.18), transparent 32%),
-      radial-gradient(circle at 94% 8%, rgba(255,209,102,0.11), transparent 24%),
-      linear-gradient(180deg, #0a1118 0%, var(--bg) 44%, #070a0f 100%);
-    color: var(--text);
-    min-height: 100vh; max-width: 480px; margin: 0 auto;
+      radial-gradient(circle at 16% -8%, rgba(56,217,199,0.16), transparent 30%),
+      radial-gradient(circle at 92% 6%, rgba(255,126,182,0.12), transparent 26%),
+      linear-gradient(180deg, #0a1118 0%, var(--bg) 46%, #070a0f 100%);
+    color: var(--text); min-height: 100vh; max-width: 480px; margin: 0 auto;
   }
   .header {
     background: rgba(17,24,33,0.9); border-bottom: 1px solid rgba(255,255,255,0.08);
     padding: calc(10px + env(safe-area-inset-top)) 16px 12px; display: flex; align-items: center;
-    justify-content: space-between; position: sticky; top: 0; z-index: 10; backdrop-filter: blur(18px);
+    justify-content: space-between; position: sticky; top: 0; z-index: 500; backdrop-filter: blur(18px);
   }
-  .logo { display: flex; align-items: center; gap: 8px; }
-  .logo-icon { width: 34px; height: 34px; background: linear-gradient(135deg, var(--green), var(--teal)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 8px 22px rgba(37,184,90,0.28); }
-  .logo-text { font-size: 17px; font-weight: 700; }
-  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); transition: background 0.3s; }
+  .logo { display: flex; align-items: center; gap: 9px; }
+  .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, var(--teal), var(--pink)); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 19px; box-shadow: 0 8px 22px rgba(56,217,199,0.26); }
+  .logo-text { font-size: 16px; font-weight: 800; line-height: 1.1; }
+  .logo-text small { display: block; font-size: 10px; color: var(--muted); font-weight: 600; }
+  .status-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); transition: background 0.3s; }
   .status-dot.online { background: var(--green); box-shadow: 0 0 6px var(--green); }
-  .tabs { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; background: rgba(8,13,18,0.78); border-bottom: 1px solid rgba(255,255,255,0.07); padding: 8px 10px; position: sticky; top: 57px; z-index: 9; backdrop-filter: blur(16px); }
-  .tab { min-height: 46px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-align: center; font-size: 11px; color: var(--muted); cursor: pointer; border: 1px solid transparent; border-radius: 8px; transition: all 0.2s; }
-  .tab-icon { font-size: 17px; line-height: 1; }
-  .tab.active { color: var(--text); background: rgba(76,217,100,0.12); border-color: rgba(76,217,100,0.32); }
+  .tabs { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; background: rgba(8,13,18,0.78); border-bottom: 1px solid rgba(255,255,255,0.07); padding: 8px 10px; position: sticky; top: 60px; z-index: 400; backdrop-filter: blur(16px); }
+  .tab { min-height: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-align: center; font-size: 11px; color: var(--muted); cursor: pointer; border: 1px solid transparent; border-radius: 9px; transition: all 0.2s; }
+  .tab-icon { font-size: 18px; line-height: 1; }
+  .tab.active { color: var(--text); background: rgba(56,217,199,0.12); border-color: rgba(56,217,199,0.32); }
   .panel { display: none; padding: 16px; }
   .panel.active { display: block; }
-  .hero { text-align:center; padding: 24px 0 14px; }
-  .hero-icon { width: 78px; height: 78px; margin: 0 auto 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 42px; background: linear-gradient(145deg, rgba(76,217,100,0.2), rgba(88,166,255,0.16)); border: 1px solid rgba(255,255,255,0.1); box-shadow: var(--shadow); }
-  .hero-title { font-size: 25px; font-weight: 800; margin-bottom: 4px; }
+  .hero { text-align:center; padding: 22px 0 12px; }
+  .hero-icon { width: 80px; height: 80px; margin: 0 auto 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 42px; background: linear-gradient(145deg, rgba(56,217,199,0.2), rgba(255,126,182,0.18)); border: 1px solid rgba(255,255,255,0.1); box-shadow: var(--shadow); }
+  .hero-title { font-size: 24px; font-weight: 850; margin-bottom: 4px; }
   .hero-sub { font-size: 13px; color: var(--muted); }
-  .card { background: rgba(17,24,33,0.88); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 16px; margin-bottom: 12px; box-shadow: 0 12px 30px rgba(0,0,0,0.18); }
-  .card-title { font-size: 12px; color: var(--muted); margin-bottom: 10px; font-weight: 700; text-transform: uppercase; }
-  input[type="text"] { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 16px; padding: 13px 12px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
-  input[type="text"]:focus { border-color: var(--blue); }
-  .btn { width: 100%; padding: 15px; border-radius: 8px; border: 1px solid transparent; font-size: 15px; font-weight: 750; cursor: pointer; transition: all 0.15s; margin-top: 8px; }
+  .card { background: rgba(17,24,33,0.88); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 12px 30px rgba(0,0,0,0.18); }
+  .card-title { font-size: 12px; color: var(--muted); margin-bottom: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  input[type="text"], textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 9px; color: var(--text); font-size: 16px; padding: 13px 12px; outline: none; transition: border-color 0.2s; font-family: inherit; }
+  input[type="text"]:focus, textarea:focus { border-color: var(--teal); }
+  textarea { resize: vertical; min-height: 64px; }
+  .btn { width: 100%; padding: 15px; border-radius: 10px; border: 1px solid transparent; font-size: 15px; font-weight: 750; cursor: pointer; transition: all 0.15s; margin-top: 8px; }
   .btn-green { background: linear-gradient(135deg, var(--accent), #35ce7d); color: #fff; box-shadow: 0 10px 24px rgba(37,184,90,0.24); }
+  .btn-teal { background: linear-gradient(135deg, var(--teal), #2bb6a6); color: #04201c; box-shadow: 0 10px 24px rgba(56,217,199,0.22); }
   .btn-blue { background: rgba(88,166,255,0.16); color: #9dccff; border-color: rgba(88,166,255,0.25); }
   .btn-red { background: rgba(255,90,95,0.12); color: #ff8b8f; border-color: rgba(255,90,95,0.22); }
   .btn-ghost { background: rgba(255,255,255,0.06); color: var(--text); border-color: rgba(255,255,255,0.08); }
   .btn:active { transform: scale(0.97); }
-  .mode-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: linear-gradient(135deg, rgba(56,217,199,0.12), rgba(255,209,102,0.1)); }
-  .mode-title { font-size: 15px; font-weight: 800; }
-  .mode-sub { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.35; }
-  .switch { width: 58px; height: 34px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); background: var(--surface3); padding: 3px; flex-shrink: 0; cursor: pointer; transition: background 0.2s; }
-  .switch-knob { width: 26px; height: 26px; border-radius: 50%; background: #d7dee8; transition: transform 0.2s, background 0.2s; }
-  .switch.on { background: rgba(76,217,100,0.28); border-color: rgba(76,217,100,0.45); }
-  .switch.on .switch-knob { transform: translateX(24px); background: var(--green); }
-  .call-section { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 16px 0 8px; }
-  .call-avatar { width: 118px; height: 118px; border-radius: 50%; background: radial-gradient(circle at 35% 25%, #26384b, var(--surface2)); border: 3px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 48px; transition: all 0.3s; }
-  .call-avatar.active { border-color: var(--green); box-shadow: 0 0 0 6px rgba(76,217,100,0.14), 0 0 0 14px rgba(56,217,199,0.07); }
-  .call-status-text { font-size: 18px; font-weight: 800; min-height: 22px; text-align: center; }
-  .call-status-sub { font-size: 13px; color: var(--muted); text-align: center; min-height: 18px; }
-  .wave-row { display: flex; align-items: flex-end; gap: 3px; height: 28px; }
-  .wave-bar { width: 4px; border-radius: 2px; background: var(--green); transition: height 0.1s; min-height: 4px; }
-  .mute-btn { width: 68px; height: 68px; border-radius: 50%; border: 2px solid var(--border); background: var(--surface2); font-size: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
-  .mute-btn.muted { background: #3a1a1a; border-color: var(--red); }
-  .mute-btn:active { transform: scale(0.93); }
-  .mute-label { font-size: 11px; color: var(--muted); text-align: center; margin-top: 4px; }
-  .speaker-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
-  .speaker-row:last-child { border-bottom: none; }
-  .sp-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; flex-shrink: 0; }
-  .sp-name { flex: 1; font-size: 14px; font-weight: 500; }
-  .sp-wave { display: flex; align-items: flex-end; gap: 2px; height: 18px; }
-  .sp-bar { width: 3px; border-radius: 1px; background: var(--green); min-height: 3px; }
-  .messages { height: 50vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
-  .msg { max-width: 82%; padding: 8px 12px; border-radius: 12px; font-size: 14px; line-height: 1.4; }
-  .msg.mine { align-self: flex-end; background: #1a4a26; color: #b0f0b8; border-bottom-right-radius: 4px; }
-  .msg.other { align-self: flex-start; background: var(--surface2); border-bottom-left-radius: 4px; }
-  .msg.system { align-self: center; background: transparent; color: var(--muted); font-size: 12px; }
-  .msg-sender { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
-  .chat-input-row { display: flex; gap: 8px; }
-  .chat-input-row input { flex: 1; }
-  .send-btn { width: 46px; height: 46px; border-radius: 10px; background: var(--accent); border: none; color: #fff; font-size: 20px; cursor: pointer; flex-shrink: 0; }
-  .send-btn:active { transform: scale(0.95); }
-  .map-placeholder { background: linear-gradient(160deg, rgba(32,44,56,0.95), rgba(12,18,24,0.95)); border: 1px solid var(--border); border-radius: 8px; height: 216px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; color: var(--muted); font-size: 14px; margin-bottom: 12px; position: relative; overflow: hidden; }
-  .map-grid { position: absolute; inset: 0; background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: 30px 30px; opacity: 0.4; }
-  .rider-dot { position: absolute; width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--bg); transform: translate(-50%, -50%); font-size: 9px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; transition: all 0.8s ease; }
-  .speed-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 12px; }
-  .stat-box { background: rgba(17,24,33,0.88); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 13px 6px; text-align: center; }
-  .stat-value { font-size: 23px; font-weight: 850; color: var(--green); }
-  .stat-unit { font-size: 11px; color: var(--muted); margin-top: 2px; }
-  .member { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+
+  /* ===== 大型速度儀表板 ===== */
+  .speedo { text-align: center; padding: 8px 0 4px; }
+  .speedo-big { font-size: 88px; font-weight: 900; line-height: 0.95; background: linear-gradient(135deg, var(--green), var(--teal)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -2px; }
+  .speedo-unit { font-size: 16px; color: var(--muted); font-weight: 700; margin-top: -2px; }
+  .speedo-sub { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 16px; }
+  .ss-box { background: rgba(17,24,33,0.9); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px 6px; }
+  .ss-val { font-size: 24px; font-weight: 850; }
+  .ss-lbl { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  /* ===== 天氣列 ===== */
+  .weather-strip { display: flex; align-items: center; justify-content: center; gap: 10px; background: linear-gradient(135deg, rgba(88,166,255,0.12), rgba(56,217,199,0.1)); border: 1px solid rgba(88,166,255,0.18); border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+  .weather-icon { font-size: 32px; }
+  .weather-info { text-align: left; }
+  .weather-temp { font-size: 22px; font-weight: 850; }
+  .weather-desc { font-size: 12px; color: var(--muted); }
+
+  /* ===== 地圖 ===== */
+  .map-wrap { position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); margin-bottom: 12px; }
+  #leafletMap { width: 100%; height: 340px; background: #1a2430; z-index: 1; }
+  .leaflet-container { background: #1a2430 !important; font-family: inherit; }
+  .leaflet-control-attribution { font-size: 9px !important; background: rgba(8,13,18,0.6) !important; color: #6b7785 !important; }
+  .leaflet-control-attribution a { color: #8fa3b5 !important; }
+  .rider-marker { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.5); font-weight: 700; color: #fff; }
+  .rider-marker span { transform: rotate(45deg); font-size: 13px; }
+  .checkin-marker { font-size: 22px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+  .map-hint-overlay { position: absolute; inset: 0; z-index: 2; display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; pointer-events: none; background: rgba(12,18,24,0.5); color: var(--muted); }
+  .map-recenter-btn { position: absolute; bottom: 12px; right: 12px; z-index: 3; width: 44px; height: 44px; border-radius: 10px; background: rgba(17,24,33,0.94); border: 1px solid var(--border); color: var(--text); font-size: 19px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+  /* ===== 成員 ===== */
+  .member { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--border); }
   .member:last-child { border-bottom: none; }
-  .member-avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; flex-shrink: 0; }
+  .member-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 700; flex-shrink: 0; }
   .member-info { flex: 1; }
-  .member-name { font-size: 14px; font-weight: 500; }
-  .member-status { font-size: 12px; color: var(--muted); }
+  .member-name { font-size: 15px; font-weight: 600; }
+  .member-status { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .member-speed { font-size: 17px; font-weight: 800; color: var(--green); }
   .tag { display: inline-block; padding: 2px 7px; border-radius: 12px; font-size: 11px; font-weight: 600; }
   .tag-green { background: var(--green-dim); color: var(--green); }
+
+  /* ===== 打卡 ===== */
+  .checkin-entry { background: rgba(17,24,33,0.9); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+  .ci-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .ci-emoji { font-size: 24px; }
+  .ci-title { font-size: 15px; font-weight: 800; flex: 1; }
+  .ci-del { background: none; border: none; color: var(--muted); font-size: 16px; cursor: pointer; padding: 4px; }
+  .ci-meta { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 4px; }
+  .ci-note { font-size: 13px; color: var(--text); margin-top: 6px; line-height: 1.5; opacity: 0.9; }
+  .weather-pick { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin: 8px 0; }
+  .wp-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 9px; padding: 8px 4px; text-align: center; cursor: pointer; font-size: 11px; color: var(--muted); }
+  .wp-btn.sel { border-color: var(--teal); background: rgba(56,217,199,0.14); color: var(--text); }
+  .wp-emoji { font-size: 22px; display: block; margin-bottom: 2px; }
+
+  /* ===== 對話框 ===== */
+  .modal-bg { position: fixed; inset: 0; z-index: 800; background: rgba(4,8,12,0.78); display: flex; align-items: flex-end; justify-content: center; backdrop-filter: blur(4px); }
+  .modal-bg.hidden { display: none; }
+  .modal { width: 100%; max-width: 480px; background: var(--surface); border-radius: 18px 18px 0 0; border-top: 1px solid var(--border); padding: 20px 16px calc(20px + env(safe-area-inset-bottom)); max-height: 88vh; overflow-y: auto; }
+  .modal-title { font-size: 18px; font-weight: 850; margin-bottom: 4px; }
+  .modal-sub { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+  .field-lbl { font-size: 12px; color: var(--muted); font-weight: 700; margin: 12px 0 6px; }
+
+  .empty { text-align: center; color: var(--muted); padding: 30px 16px; font-size: 14px; line-height: 1.7; }
   .notice { font-size: 12px; color: var(--muted); text-align: center; padding: 8px; line-height: 1.5; }
-  .pill-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-  .pill { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px; }
-  .pill-label { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
-  .pill-value { font-size: 13px; font-weight: 800; }
   .hidden { display: none !important; }
   .room-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 12px; font-family: monospace; cursor: pointer; }
-  @keyframes speaking-pulse { 0%,100% { height: 4px; } 50% { height: 18px; } }
-  .speaking .sp-bar:nth-child(1) { animation: speaking-pulse 0.6s infinite 0s; }
-  .speaking .sp-bar:nth-child(2) { animation: speaking-pulse 0.6s infinite 0.1s; }
-  .speaking .sp-bar:nth-child(3) { animation: speaking-pulse 0.6s infinite 0.2s; }
-  .speaking .sp-bar:nth-child(4) { animation: speaking-pulse 0.6s infinite 0.1s; }
-  .speaking .sp-bar:nth-child(5) { animation: speaking-pulse 0.6s infinite 0s; }
-  body.power-save .speaking .sp-bar { animation: none; height: 4px !important; background: var(--amber); }
-  body.power-save .call-avatar.active { box-shadow: 0 0 0 6px rgba(255,209,102,0.12); border-color: var(--amber); }
-  body.power-save .wave-bar { background: var(--amber); }
-  body.power-save .rider-dot { transition: none; }
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation: none !important; transition: none !important; }
-  }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .quick-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .quick-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 999px; padding: 7px 13px; font-size: 13px; color: var(--text); cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .quick-chip:active { transform: scale(0.95); }
+  .quick-chip.teal { border-color: rgba(56,217,199,0.4); background: rgba(56,217,199,0.12); }
+  .recent-room { display: flex; align-items: center; gap: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 11px 12px; margin-bottom: 8px; cursor: pointer; }
+  .recent-room:active { transform: scale(0.98); }
+  .recent-room:last-child { margin-bottom: 0; }
+  .rr-icon { font-size: 20px; }
+  .rr-info { flex: 1; min-width: 0; }
+  .rr-name { font-size: 14px; font-weight: 700; }
+  .rr-code { font-size: 11px; color: var(--muted); font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rr-del { background: none; border: none; color: var(--muted); font-size: 15px; cursor: pointer; padding: 4px 6px; flex-shrink: 0; }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div class="logo"><div class="logo-icon">🚴</div><div class="logo-text">CycleLink</div></div>
+  <div class="logo">
+    <div class="logo-icon">🚲</div>
+    <div class="logo-text">Syue &amp; Lynn<small>的騎乘日記</small></div>
+  </div>
   <div style="display:flex;align-items:center;gap:8px;">
     <span id="roomBadge" class="room-badge hidden" onclick="copyRoomCode()"><span id="roomIdDisplay">—</span> 📋</span>
     <div class="status-dot" id="statusDot"></div>
   </div>
 </div>
 
+<!-- 設定畫面 -->
 <div id="setupScreen" style="padding:16px;">
   <div class="hero">
-    <div class="hero-icon">🚴‍♂️</div>
-    <div class="hero-title">CycleLink</div>
-    <div class="hero-sub">免持通話 · 位置共享 · 即時聊天</div>
-  </div>
-  <div class="card mode-card">
-    <div>
-      <div class="mode-title">騎乘省電模式</div>
-      <div class="mode-sub" id="powerModeTextSetup">GPS 降頻、波形減少，適合同時開 Pikmin。</div>
-    </div>
-    <button class="switch" id="powerSwitchSetup" onclick="togglePowerSaver()" aria-label="切換省電模式"><span class="switch-knob"></span></button>
+    <div class="hero-icon">🚲</div>
+    <div class="hero-title">Syue &amp; Lynn 的騎乘日記</div>
+    <div class="hero-sub">隊友位置 · 即時速度 · 打卡記錄</div>
   </div>
   <div class="card">
     <div class="card-title">你的暱稱</div>
-    <input type="text" id="nicknameInput" placeholder="例如：阿明、小花" maxlength="12">
+    <input type="text" id="nicknameInput" placeholder="例如：Syue、Lynn" maxlength="12">
+    <div id="nickQuick" class="quick-row"></div>
+  </div>
+  <div class="card" id="recentRoomCard" style="display:none;">
+    <div class="card-title">最近的房間（一鍵進入）</div>
+    <div id="recentRooms"></div>
   </div>
   <div class="card">
-    <div class="card-title">建立新房間</div>
-    <button class="btn btn-green" onclick="createRoom()">🏠 建立騎行房間</button>
+    <div class="card-title">建立騎乘房間</div>
+    <input type="text" id="customIdInput" placeholder="自訂固定代碼（選填，方便下次重用）" maxlength="30" style="margin-bottom:8px;">
+    <button class="btn btn-teal" onclick="createRoom()">🏠 建立新房間</button>
   </div>
   <div class="card">
-    <div class="card-title">加入現有房間</div>
-    <input type="text" id="joinCodeInput" placeholder="貼上好友的房間代碼" maxlength="60" style="margin-bottom:8px;">
+    <div class="card-title">加入隊友房間</div>
+    <input type="text" id="joinCodeInput" placeholder="貼上隊友的房間代碼" maxlength="60" style="margin-bottom:8px;">
     <button class="btn btn-blue" onclick="joinRoom()">🔗 加入房間</button>
   </div>
-  <div class="notice">需要網路連線 · PeerJS 點對點加密傳輸<br>連線後麥克風保持開啟（免持模式）<br>建議戴耳機避免回授</div>
+  <div class="notice">語音請用 WhatsApp，本頁專注位置與打卡<br>需要網路連線 · 位置點對點傳輸</div>
 </div>
 
+<!-- 主畫面 -->
 <div id="mainApp" class="hidden">
   <div class="tabs">
-    <div class="tab active" onclick="switchTab('call')"><span class="tab-icon">📞</span><span>通話</span></div>
-    <div class="tab" onclick="switchTab('chat')"><span class="tab-icon">💬</span><span>聊天</span></div>
-    <div class="tab" onclick="switchTab('location')"><span class="tab-icon">📍</span><span>位置</span></div>
-    <div class="tab" onclick="switchTab('members')"><span class="tab-icon">👥</span><span>成員</span></div>
+    <div class="tab active" onclick="switchTab('ride')"><span class="tab-icon">🚴</span><span>騎乘</span></div>
+    <div class="tab" onclick="switchTab('checkin')"><span class="tab-icon">📍</span><span>打卡</span></div>
+    <div class="tab" onclick="switchTab('team')"><span class="tab-icon">👥</span><span>隊友</span></div>
   </div>
 
-  <div class="panel active" id="tab-call">
-    <div class="card mode-card">
-      <div>
-        <div class="mode-title">騎乘省電模式</div>
-        <div class="mode-sub" id="powerModeTextMain">GPS 每 12 秒分享，音量動畫降頻。</div>
-      </div>
-      <button class="switch" id="powerSwitchMain" onclick="togglePowerSaver()" aria-label="切換省電模式"><span class="switch-knob"></span></button>
-    </div>
-    <div class="call-section">
-      <div class="call-avatar active" id="callAvatar">🎙️</div>
-      <div class="call-status-text" id="callStatusText">連線中...</div>
-      <div class="call-status-sub" id="callStatusSub">等待騎友加入</div>
-      <div class="wave-row" id="myWave">
-        <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
-        <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-        <button class="mute-btn" id="muteBtn" onclick="toggleMute()">🎙️</button>
-        <div class="mute-label" id="muteLabel">麥克風開啟</div>
+  <!-- 騎乘頁：速度 + 地圖 -->
+  <div class="panel active" id="tab-ride">
+    <div class="weather-strip" id="weatherStrip">
+      <div class="weather-icon" id="wIcon">⛅</div>
+      <div class="weather-info">
+        <div class="weather-temp" id="wTemp">--°C</div>
+        <div class="weather-desc" id="wDesc">取得天氣中...</div>
       </div>
     </div>
-    <div class="card"><div class="card-title">通話成員</div><div id="callPeersList"></div></div>
-    <button class="btn btn-red" onclick="leaveRoom()">🚪 離開房間</button>
+    <div class="speedo">
+      <div class="speedo-big" id="speedVal">0</div>
+      <div class="speedo-unit">km/h</div>
+      <div class="speedo-sub">
+        <div class="ss-box"><div class="ss-val" id="distVal">0.0</div><div class="ss-lbl">公里</div></div>
+        <div class="ss-box"><div class="ss-val" id="timeVal">0:00</div><div class="ss-lbl">時間</div></div>
+        <div class="ss-box"><div class="ss-val" id="avgVal">0.0</div><div class="ss-lbl">均速</div></div>
+      </div>
+    </div>
+    <div class="map-wrap" style="margin-top:14px;">
+      <div id="leafletMap"></div>
+      <div id="mapHint" class="map-hint-overlay"><div style="font-size:24px;margin-bottom:6px;">🗺️</div><div style="font-size:13px;">開啟定位後顯示地圖</div></div>
+      <button class="map-recenter-btn hidden" id="recenterBtn" onclick="recenterMap()" title="置中">🎯</button>
+    </div>
+    <button class="btn btn-green" id="gpsBtn" onclick="startGPS()">📍 開始騎乘記錄</button>
+    <button class="btn btn-ghost hidden" id="gpsStopBtn" onclick="stopGPS()">⏸ 暫停記錄</button>
+    <button class="btn btn-red hidden" id="finishBtn" onclick="finishRide()">🏁 結束騎乘，產生路線圖</button>
+    <button class="btn btn-teal" onclick="openCheckinModal()">📸 在這裡打卡</button>
   </div>
 
-  <div class="panel" id="tab-chat">
-    <div class="messages" id="messageList"></div>
-    <div class="chat-input-row">
-      <input type="text" id="chatInput" placeholder="輸入訊息..." maxlength="200" onkeydown="if(event.key==='Enter')sendMessage()">
-      <button class="send-btn" onclick="sendMessage()">➤</button>
+  <!-- 打卡頁 -->
+  <div class="panel" id="tab-checkin">
+    <div class="row2" style="margin-bottom:12px;">
+      <button class="btn btn-blue" style="margin:0;" onclick="exportData()">⬇️ 匯出備份</button>
+      <button class="btn btn-ghost" style="margin:0;" onclick="document.getElementById('importFile').click()">⬆️ 匯入備份</button>
     </div>
+    <input type="file" id="importFile" accept="application/json" class="hidden" onchange="importData(event)">
+    <div id="rideList"></div>
+    <div id="checkinList"></div>
   </div>
 
-  <div class="panel" id="tab-location">
-    <div class="pill-row">
-      <div class="pill"><div class="pill-label">定位模式</div><div class="pill-value" id="gpsModeLabel">省電定位</div></div>
-      <div class="pill"><div class="pill-label">分享頻率</div><div class="pill-value" id="gpsShareLabel">每 12 秒</div></div>
-    </div>
-    <div class="speed-row">
-      <div class="stat-box"><div class="stat-value" id="speedVal">—</div><div class="stat-unit">km/h</div></div>
-      <div class="stat-box"><div class="stat-value" id="distVal">0.0</div><div class="stat-unit">km 距離</div></div>
-      <div class="stat-box"><div class="stat-value" id="timeVal">0:00</div><div class="stat-unit">時間</div></div>
-    </div>
-    <div class="map-placeholder" id="mapArea">
-      <div class="map-grid"></div>
-      <div id="mapHint" style="position:relative;z-index:1;text-align:center;">
-        <div style="font-size:24px;margin-bottom:6px;">🗺️</div><div style="font-size:13px;">點擊下方開啟定位</div>
-      </div>
-    </div>
-    <button class="btn btn-green" id="gpsBtn" onclick="startGPS()">📍 開啟 GPS 定位</button>
-    <button class="btn btn-ghost hidden" id="gpsStopBtn" onclick="stopGPS()">停止定位分享</button>
-    <div class="notice" style="margin-top:8px;">位置僅分享給同房間成員</div>
-  </div>
-
-  <div class="panel" id="tab-members">
+  <!-- 隊友頁 -->
+  <div class="panel" id="tab-team">
     <div class="card">
       <div class="card-title">房間代碼（點擊複製）</div>
-      <code id="roomCodeBig" style="font-size:16px;font-weight:700;color:var(--blue);word-break:break-all;display:block;margin-bottom:6px;"></code>
-      <button class="btn btn-blue" onclick="copyRoomCode()">📋 複製代碼給騎友</button>
+      <code id="roomCodeBig" style="font-size:16px;font-weight:700;color:var(--teal);word-break:break-all;display:block;margin-bottom:6px;"></code>
+      <button class="btn btn-blue" onclick="copyRoomCode()">📋 複製代碼給隊友</button>
     </div>
-    <div class="card"><div class="card-title">成員列表（<span id="memberCount">1</span> 人）</div><div id="memberList"></div></div>
+    <div class="card"><div class="card-title">隊友列表（<span id="memberCount">1</span> 人）</div><div id="memberList"></div></div>
+    <button class="btn btn-red" onclick="leaveRoom()">🚪 離開房間</button>
+  </div>
+</div>
+
+<!-- 打卡對話框 -->
+<div id="checkinModal" class="modal-bg hidden">
+  <div class="modal">
+    <div class="modal-title">📸 打卡記錄</div>
+    <div class="modal-sub" id="ciModalSub">為這個地點留下紀錄</div>
+    <div class="field-lbl">地點名稱</div>
+    <input type="text" id="ciName" placeholder="例如：河濱公園、便利商店補給" maxlength="40">
+    <div class="field-lbl">日期時間（自動帶入，可改）</div>
+    <input type="text" id="ciDate" maxlength="30">
+    <div class="field-lbl">天氣（自動偵測，可手改）</div>
+    <div class="weather-pick" id="weatherPick"></div>
+    <div class="field-lbl">備註心得</div>
+    <textarea id="ciNote" placeholder="這裡風景很棒、補給充足..."></textarea>
+    <button class="btn btn-teal" onclick="saveCheckin()">✅ 儲存打卡</button>
+    <button class="btn btn-ghost" onclick="closeCheckinModal()">取消</button>
+  </div>
+</div>
+
+<!-- 路線總結對話框 -->
+<div id="routeModal" class="modal-bg hidden">
+  <div class="modal">
+    <div class="modal-title">🏁 本趟路線</div>
+    <div class="modal-sub" id="routeModalSub">這是你騎過的完整路線</div>
+    <div class="map-wrap"><div id="routeMap" style="width:100%;height:300px;background:#1a2430;"></div></div>
+    <div id="gapInfo" style="font-size:12px;color:var(--amber);text-align:center;margin-bottom:10px;line-height:1.5;"></div>
+    <div class="speedo-sub" style="margin-top:0;">
+      <div class="ss-box"><div class="ss-val" id="rDist">0.0</div><div class="ss-lbl">公里</div></div>
+      <div class="ss-box"><div class="ss-val" id="rTime">0:00</div><div class="ss-lbl">時間</div></div>
+      <div class="ss-box"><div class="ss-val" id="rAvg">0.0</div><div class="ss-lbl">均速</div></div>
+    </div>
+    <div class="speedo-sub" style="margin-top:8px;">
+      <div class="ss-box"><div class="ss-val" id="rMax">0</div><div class="ss-lbl">最高 km/h</div></div>
+      <div class="ss-box"><div class="ss-val" id="rPts">0</div><div class="ss-lbl">軌跡點</div></div>
+      <div class="ss-box"><div class="ss-val" id="rCheck">0</div><div class="ss-lbl">打卡數</div></div>
+    </div>
+    <div class="field-lbl">這趟的名稱</div>
+    <input type="text" id="rideName" placeholder="例如：河濱半日遊" maxlength="40">
+    <button class="btn btn-teal" onclick="saveRide()">💾 儲存這趟路線</button>
+    <button class="btn btn-blue" onclick="exportRideImage()">🖼 下載路線圖片</button>
+    <button class="btn btn-ghost" onclick="closeRouteModal()">關閉</button>
   </div>
 </div>
 
 <script>
+// ===== 狀態 =====
 let peer=null,myId='',myNickname='',roomHostId='';
-let connections={},audioConns={},members={};
-let localStream=null,isHost=false,isMuted=false;
-let watchId=null,sessionStart=null,sessionInterval=null;
-let myLat=null,myLng=null,totalDist=0;
-let audioCtx=null,analyser=null,analyserData=null,animFrame=null;
-let powerSaver=true,lastLocationShare=0,lastMapUpdate=0,waveTimer=null;
-const COLORS=['#f85149','#f0883e','#3fb950','#58a6ff','#d2a8ff','#ffa657','#79c0ff'];
+let connections={},members={},isHost=false;
+let watchId=null,sessionStart=null,sessionInterval=null,pausedTime=0;
+let myLat=null,myLng=null,totalDist=0,curSpeed=0;
+let reconnectTimer=null;
+const COLORS=['#4cd964','#58a6ff','#ff7eb6','#ffd166','#d2a8ff','#ff8b4c','#38d9c7'];
 let colorIdx=0;
 function nextColor(){return COLORS[colorIdx++%COLORS.length];}
-function gpsShareInterval(){return powerSaver?12000:3000;}
-function mapUpdateInterval(){return powerSaver?5000:1000;}
-function waveInterval(){return powerSaver?500:100;}
 
-function togglePowerSaver(){
-  powerSaver=!powerSaver;
-  applyPowerMode();
-  if(!document.getElementById('mainApp').classList.contains('hidden'))addSysMsg(powerSaver?'已開啟騎乘省電模式':'已切回即時模式');
+// 天氣代碼對應（WMO weather code）
+const WEATHER_MAP={
+  clear:{emoji:'☀️',desc:'晴朗'},
+  partly:{emoji:'⛅',desc:'多雲'},
+  cloudy:{emoji:'☁️',desc:'陰天'},
+  fog:{emoji:'🌫️',desc:'有霧'},
+  rain:{emoji:'🌧️',desc:'下雨'},
+  shower:{emoji:'🌦️',desc:'陣雨'},
+  snow:{emoji:'❄️',desc:'下雪'},
+  storm:{emoji:'⛈️',desc:'雷雨'}
+};
+const WEATHER_KEYS=['clear','partly','cloudy','fog','rain','shower','snow','storm'];
+function codeToWeather(code){
+  if(code===0)return'clear';
+  if(code<=2)return'partly';
+  if(code===3)return'cloudy';
+  if(code===45||code===48)return'fog';
+  if(code>=51&&code<=67)return'rain';
+  if(code>=80&&code<=82)return'shower';
+  if(code>=71&&code<=77)return'snow';
+  if(code>=95)return'storm';
+  return'partly';
 }
-function applyPowerMode(){
-  document.body.classList.toggle('power-save',powerSaver);
-  ['powerSwitchSetup','powerSwitchMain'].forEach(id=>document.getElementById(id)?.classList.toggle('on',powerSaver));
-  const setupText=document.getElementById('powerModeTextSetup');
-  const mainText=document.getElementById('powerModeTextMain');
-  const label=document.getElementById('gpsModeLabel');
-  const share=document.getElementById('gpsShareLabel');
-  if(setupText)setupText.textContent=powerSaver?'GPS 降頻、波形減少，適合同時開 Pikmin。':'即時顯示較順暢，但比較耗電。';
-  if(mainText)mainText.textContent=powerSaver?'GPS 每 12 秒分享，音量動畫降頻。':'GPS 每 3 秒分享，音量動畫較即時。';
-  if(label)label.textContent=powerSaver?'省電定位':'即時定位';
-  if(share)share.textContent=powerSaver?'每 12 秒':'每 3 秒';
-}
+let curWeather={key:'partly',temp:null};
 
+// ===== 連線（僅位置，無語音）=====
 function createRoom(){
   myNickname=(document.getElementById('nicknameInput').value.trim()||'騎士');isHost=true;
-  initPeer(()=>{roomHostId=myId;setRoomUI(myId);members[myId]={nickname:myNickname,color:nextColor(),muted:false};enterApp();addSysMsg('房間建立！等待騎友加入 🚴');startMic();});
+  saveNickname(myNickname);
+  const custom=document.getElementById('customIdInput').value.trim().replace(/[^a-zA-Z0-9_-]/g,'');
+  initPeer(()=>{roomHostId=myId;setRoomUI(myId);members[myId]={nickname:myNickname,color:nextColor()};rememberRoom(myId,myNickname,true,!!custom);enterApp();},custom||null);
 }
 function joinRoom(){
   const code=document.getElementById('joinCodeInput').value.trim();
   if(!code){alert('請輸入房間代碼');return;}
   myNickname=(document.getElementById('nicknameInput').value.trim()||'騎士');isHost=false;roomHostId=code;
-  initPeer(()=>{setRoomUI(code);members[myId]={nickname:myNickname,color:nextColor(),muted:false};connectToHost(code);});
+  saveNickname(myNickname);
+  initPeer(()=>{setRoomUI(code);members[myId]={nickname:myNickname,color:nextColor()};rememberRoom(code,myNickname,false);connectToHost(code);});
 }
-function initPeer(cb){
-  peer=new Peer({config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]}});
+// 從快捷直接加入指定房間
+function quickJoin(code){
+  document.getElementById('joinCodeInput').value=code;
+  joinRoom();
+}
+function initPeer(cb,customId){
+  const cfg={config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]}};
+  // 自訂 ID 加前綴避免與他人衝突
+  peer=customId?new Peer('syuelynn-'+customId,cfg):new Peer(cfg);
   peer.on('open',id=>{myId=id;cb();});
-  peer.on('connection',conn=>setupDataConn(conn));
-  peer.on('call',call=>answerCall(call));
-  peer.on('error',e=>{if(e.type==='peer-unavailable')alert('找不到此房間，請確認代碼');else console.warn(e);});
+  peer.on('connection',conn=>setupConn(conn));
+  peer.on('error',e=>{
+    if(e.type==='peer-unavailable')alert('找不到此房間，請確認代碼');
+    else if(e.type==='unavailable-id'){alert('此固定代碼已被使用中，請換一個，或稍後再試（若是你自己剛才開的，請先關閉舊分頁）');location.reload();}
+    else console.warn(e);
+  });
 }
 function connectToHost(hostId){
   const conn=peer.connect(hostId,{metadata:{nickname:myNickname,peerId:myId}});
-  conn.on('open',()=>{setupDataConn(conn);conn.send({type:'join',nickname:myNickname,peerId:myId,color:members[myId].color});enterApp();addSysMsg('已連線！歡迎加入 🎉');startMic(()=>callPeer(hostId));});
+  conn.on('open',()=>{setupConn(conn);conn.send({type:'join',nickname:myNickname,peerId:myId,color:members[myId].color});enterApp();});
   conn.on('error',e=>console.warn(e));
 }
-function setupDataConn(conn){
+function setupConn(conn){
   const pid=conn.peer;connections[pid]=conn;
   conn.on('data',data=>handleData(data,pid));
-  conn.on('close',()=>{const m=members[pid];if(m)addSysMsg(`${m.nickname} 離開了`);delete members[pid];delete connections[pid];const a=document.getElementById('audio_'+pid);if(a)a.remove();renderMembers();renderCallPeers();});
+  conn.on('close',()=>{delete members[pid];delete connections[pid];renderMembers();updateMap();if(!isHost&&pid===roomHostId)scheduleReconnect();});
 }
 function handleData(data,fromId){
   if(data.type==='join'){
-    if(!members[fromId])members[fromId]={nickname:data.nickname,color:data.color||nextColor(),muted:false};
-    addSysMsg(`${data.nickname} 加入了 🎉`);renderMembers();renderCallPeers();
-    if(isHost){broadcast(data,fromId);connections[fromId]?.send({type:'memberSync',members:sanitizeMembers()});callPeer(fromId);}
+    if(!members[fromId])members[fromId]={nickname:data.nickname,color:data.color||nextColor()};
+    renderMembers();updateMap();
+    if(isHost){broadcast(data,fromId);connections[fromId]?.send({type:'memberSync',members:members});}
   }else if(data.type==='memberSync'){
-    Object.entries(data.members).forEach(([pid,m])=>{if(!members[pid])members[pid]=m;});renderMembers();renderCallPeers();
-  }else if(data.type==='msg'){addChatMsg(data.text,data.nickname,false);if(isHost)broadcast(data,fromId);
-  }else if(data.type==='muted'){if(members[fromId])members[fromId].muted=data.val;renderCallPeers();if(isHost)broadcast(data,fromId);
-  }else if(data.type==='location'){if(members[fromId]){members[fromId].lat=data.lat;members[fromId].lng=data.lng;}updateMap();if(isHost)broadcast(data,fromId);}
+    Object.entries(data.members).forEach(([pid,m])=>{if(!members[pid])members[pid]=m;});renderMembers();updateMap();
+  }else if(data.type==='location'){
+    if(members[fromId]){members[fromId].lat=data.lat;members[fromId].lng=data.lng;members[fromId].speed=data.speed;}
+    renderMembers();updateMap();
+    if(isHost)broadcast(data,fromId);
+  }
 }
-function broadcast(data,exceptId){Object.entries(connections).forEach(([pid,conn])=>{if(pid!==exceptId)conn.send(data);});}
-function sanitizeMembers(){const out={};Object.entries(members).forEach(([pid,m])=>{out[pid]={nickname:m.nickname,color:m.color,muted:false};});return out;}
-async function startMic(cb){
-  try{localStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false});setupAnalyser();if(cb)cb();}
-  catch(e){alert('無法取得麥克風：'+e.message+'\n\n請確認已允許麥克風權限，且網頁透過 https 或檔案開啟');}
-}
-function callPeer(peerId){if(!localStream||audioConns[peerId])return;const call=peer.call(peerId,localStream);handleMediaConn(call,peerId);}
-function answerCall(call){const pid=call.peer;if(!localStream){startMic(()=>{call.answer(localStream);handleMediaConn(call,pid);});}else{call.answer(localStream);handleMediaConn(call,pid);}}
-function handleMediaConn(call,pid){
-  if(audioConns[pid])return;audioConns[pid]=call;
-  call.on('stream',remote=>{let a=document.getElementById('audio_'+pid);if(!a){a=document.createElement('audio');a.id='audio_'+pid;a.setAttribute('playsinline','');document.body.appendChild(a);}a.srcObject=remote;a.autoplay=true;a.play().catch(()=>{});});
-  call.on('close',()=>{delete audioConns[pid];});
-}
-function setupAnalyser(){
-  audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-  const src=audioCtx.createMediaStreamSource(localStream);
-  analyser=audioCtx.createAnalyser();analyser.fftSize=128;src.connect(analyser);
-  analyserData=new Uint8Array(analyser.frequencyBinCount);animWave();
-}
-function animWave(){
-  if(!analyser)return;
-  analyser.getByteFrequencyData(analyserData);
-  const bars=document.getElementById('myWave')?.children;
-  if(bars){for(let i=0;i<bars.length;i++){bars[i].style.height=(isMuted?4:Math.max(4,(analyserData[i*3]/255)*28))+'px';}}
-  clearTimeout(waveTimer);
-  waveTimer=setTimeout(()=>{animFrame=requestAnimationFrame(animWave);},waveInterval());
-}
-function toggleMute(){
-  isMuted=!isMuted;
-  if(localStream)localStream.getAudioTracks().forEach(t=>t.enabled=!isMuted);
-  if(members[myId])members[myId].muted=isMuted;
-  document.getElementById('muteBtn').textContent=isMuted?'🔇':'🎙️';
-  document.getElementById('muteBtn').classList.toggle('muted',isMuted);
-  document.getElementById('muteLabel').textContent=isMuted?'已靜音':'麥克風開啟';
-  document.getElementById('callAvatar').classList.toggle('active',!isMuted);
-  broadcast({type:'muted',val:isMuted,nickname:myNickname},null);renderCallPeers();
+function broadcast(data,exceptId){Object.entries(connections).forEach(([pid,conn])=>{if(pid!==exceptId&&conn.open)conn.send(data);});}
+function scheduleReconnect(){
+  if(isHost||reconnectTimer)return;
+  reconnectTimer=setInterval(()=>{
+    if(connections[roomHostId]&&connections[roomHostId].open){clearInterval(reconnectTimer);reconnectTimer=null;return;}
+    try{connectToHost(roomHostId);}catch(e){}
+  },5000);
 }
 function enterApp(){
   document.getElementById('setupScreen').classList.add('hidden');
   document.getElementById('mainApp').classList.remove('hidden');
   document.getElementById('statusDot').classList.add('online');
-  applyPowerMode();
-  renderMembers();renderCallPeers();updateCallStatus();
+  renderMembers();renderCheckins();renderRides();
 }
 function setRoomUI(code){document.getElementById('roomIdDisplay').textContent=code.slice(0,8)+'...';document.getElementById('roomBadge').classList.remove('hidden');document.getElementById('roomCodeBig').textContent=code;}
-function updateCallStatus(){const c=Object.keys(members).length;document.getElementById('callStatusText').textContent=c>1?'通話中':'等待騎友加入';document.getElementById('callStatusSub').textContent=c>1?`${c} 人在線`:'分享房間代碼給騎友';}
-function renderCallPeers(){
-  const list=document.getElementById('callPeersList');list.innerHTML='';
-  Object.entries(members).forEach(([pid,m])=>{
-    const isMe=pid===myId;const muted=isMe?isMuted:(m.muted||false);
-    const div=document.createElement('div');div.className='speaker-row';
-    div.innerHTML=`<div class="sp-avatar" style="background:${m.color}20;color:${m.color};">${m.nickname.slice(0,1)}</div><div class="sp-name">${escHtml(m.nickname)}${isMe?' <span class="tag tag-green">我</span>':''}</div><div style="font-size:13px;color:var(--muted);">${muted?'🔇':''}</div><div class="sp-wave${muted?'':' speaking'}"><div class="sp-bar"></div><div class="sp-bar"></div><div class="sp-bar"></div><div class="sp-bar"></div><div class="sp-bar"></div></div>`;
-    list.appendChild(div);
-  });
-  updateCallStatus();
-}
+
+// ===== 隊友列表 =====
 function renderMembers(){
   const list=document.getElementById('memberList');const entries=Object.entries(members);
   document.getElementById('memberCount').textContent=entries.length;list.innerHTML='';
   entries.forEach(([pid,m])=>{
-    const isMe=pid===myId;const div=document.createElement('div');div.className='member';
-    div.innerHTML=`<div class="member-avatar" style="background:${m.color}20;color:${m.color};">${m.nickname.slice(0,1)}</div><div class="member-info"><div class="member-name">${escHtml(m.nickname)} ${isMe?'<span class="tag tag-green">我</span>':''}</div><div class="member-status">${m.lat?'📍 定位中':'待機'}</div></div><div style="font-size:13px;">${(isMe?isMuted:m.muted)?'🔇':'🎙️'}</div>`;
+    const isMe=pid===myId;
+    const div=document.createElement('div');div.className='member';
+    div.innerHTML=`<div class="member-avatar" style="background:${m.color}22;color:${m.color};">${escHtml(m.nickname.slice(0,1))}</div>
+      <div class="member-info"><div class="member-name">${escHtml(m.nickname)} ${isMe?'<span class="tag tag-green">我</span>':''}</div>
+      <div class="member-status">${m.lat!=null?'📍 騎乘中':'尚未開始定位'}</div></div>
+      <div class="member-speed">${m.speed!=null?m.speed:'—'}<span style="font-size:11px;color:var(--muted);font-weight:600;"> km/h</span></div>`;
     list.appendChild(div);
   });
 }
-function sendMessage(){const inp=document.getElementById('chatInput');const t=inp.value.trim();if(!t)return;inp.value='';addChatMsg(t,myNickname,true);broadcast({type:'msg',text:t,nickname:myNickname},null);}
-function addChatMsg(text,sender,isMine){const list=document.getElementById('messageList');const div=document.createElement('div');div.className='msg '+(isMine?'mine':'other');div.innerHTML=(isMine?'':`<div class="msg-sender">${escHtml(sender)}</div>`)+escHtml(text);list.appendChild(div);list.scrollTop=list.scrollHeight;}
-function addSysMsg(text){const list=document.getElementById('messageList');if(!list)return;const div=document.createElement('div');div.className='msg system';div.textContent=text;list.appendChild(div);list.scrollTop=list.scrollHeight;}
+
+// ===== GPS =====
 function startGPS(){
-  if(!navigator.geolocation){alert('不支援 GPS');return;}
+  if(!navigator.geolocation){alert('此裝置不支援 GPS');return;}
   if(watchId)return;
-  document.getElementById('gpsBtn').textContent='⏳ 定位中...';document.getElementById('gpsBtn').disabled=true;
+  document.getElementById('gpsBtn').classList.add('hidden');
   document.getElementById('gpsStopBtn').classList.remove('hidden');
-  sessionStart=Date.now();
-  sessionInterval=setInterval(()=>{const s=Math.floor((Date.now()-sessionStart)/1000);document.getElementById('timeVal').textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;},1000);
+  document.getElementById('recenterBtn').classList.remove('hidden');
+  initLeafletMap();
+  if(!sessionStart)sessionStart=Date.now()-pausedTime;
+  sessionInterval=setInterval(updateTime,1000);
   watchId=navigator.geolocation.watchPosition(pos=>{
-    const now=Date.now();
     const lat=pos.coords.latitude,lng=pos.coords.longitude;
-    const spd=pos.coords.speed!=null?(pos.coords.speed*3.6).toFixed(1):'—';
-    document.getElementById('speedVal').textContent=spd;
-    document.getElementById('gpsBtn').textContent='📍 定位中';document.getElementById('mapHint').style.display='none';
-    if(myLat!==null)totalDist+=haversine(myLat,myLng,lat,lng);
-    myLat=lat;myLng=lng;document.getElementById('distVal').textContent=totalDist.toFixed(2);
-    if(members[myId]){members[myId].lat=lat;members[myId].lng=lng;}
-    if(now-lastMapUpdate>=mapUpdateInterval()){updateMap();lastMapUpdate=now;}
-    if(now-lastLocationShare>=gpsShareInterval()){broadcast({type:'location',lat,lng},null);lastLocationShare=now;}
-  },err=>{document.getElementById('gpsBtn').textContent='📍 重試';document.getElementById('gpsBtn').disabled=false;document.getElementById('gpsStopBtn').classList.add('hidden');alert('定位失敗：'+err.message);},{enableHighAccuracy:!powerSaver,maximumAge:powerSaver?10000:3000,timeout:15000});
+    curSpeed=pos.coords.speed!=null&&pos.coords.speed>=0?+(pos.coords.speed*3.6).toFixed(1):0;
+    document.getElementById('speedVal').textContent=Math.round(curSpeed);
+    document.getElementById('mapHint').style.display='none';
+    if(myLat!==null){const d=haversine(myLat,myLng,lat,lng);if(d<0.5)totalDist+=d;}
+    myLat=lat;myLng=lng;
+    trackPoints.push([lat,lng,Date.now()]);
+    drawTrack();
+    document.getElementById('distVal').textContent=totalDist.toFixed(2);
+    if(curSpeed>maxSpeed)maxSpeed=curSpeed;
+    if(members[myId]){members[myId].lat=lat;members[myId].lng=lng;members[myId].speed=Math.round(curSpeed);}
+    renderMembers();updateMap();updateAvg();
+    broadcast({type:'location',lat,lng,speed:Math.round(curSpeed)},null);
+    if(curWeather.temp===null)fetchWeather(lat,lng);
+  },err=>{
+    document.getElementById('gpsBtn').classList.remove('hidden');
+    document.getElementById('gpsStopBtn').classList.add('hidden');
+    alert('定位失敗：'+err.message);
+  },{enableHighAccuracy:true,maximumAge:3000,timeout:15000});
 }
 function stopGPS(){
-  if(watchId)navigator.geolocation.clearWatch(watchId);
-  watchId=null;
-  if(sessionInterval)clearInterval(sessionInterval);
-  sessionInterval=null;
-  document.getElementById('gpsBtn').textContent='📍 開啟 GPS 定位';
-  document.getElementById('gpsBtn').disabled=false;
+  if(watchId)navigator.geolocation.clearWatch(watchId);watchId=null;
+  if(sessionInterval)clearInterval(sessionInterval);sessionInterval=null;
+  if(sessionStart)pausedTime=Date.now()-sessionStart;
+  document.getElementById('gpsBtn').classList.remove('hidden');
+  document.getElementById('gpsBtn').textContent='▶️ 繼續騎乘記錄';
   document.getElementById('gpsStopBtn').classList.add('hidden');
-  addSysMsg('已停止定位分享');
+  if(trackPoints.length>=2)document.getElementById('finishBtn').classList.remove('hidden');
+}
+function updateTime(){
+  if(!sessionStart)return;
+  const s=Math.floor((Date.now()-sessionStart)/1000);
+  document.getElementById('timeVal').textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+  updateAvg();
+}
+function updateAvg(){
+  if(!sessionStart)return;
+  const h=(Date.now()-sessionStart)/3600000;
+  document.getElementById('avgVal').textContent=h>0?(totalDist/h).toFixed(1):'0.0';
 }
 function haversine(lat1,lng1,lat2,lng2){const R=6371,dL=(lat2-lat1)*Math.PI/180,dG=(lng2-lng1)*Math.PI/180;const a=Math.sin(dL/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dG/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
-function updateMap(){
-  const map=document.getElementById('mapArea');map.querySelectorAll('.rider-dot').forEach(d=>d.remove());
-  const all=Object.entries(members).filter(([,m])=>m.lat);if(!all.length)return;
-  const lats=all.map(([,m])=>m.lat),lngs=all.map(([,m])=>m.lng);
-  const minLat=Math.min(...lats),maxLat=Math.max(...lats),minLng=Math.min(...lngs),maxLng=Math.max(...lngs);const pad=0.0005;
-  all.forEach(([pid,m])=>{const dot=document.createElement('div');dot.className='rider-dot';dot.style.background=m.color||'#3fb950';dot.textContent=m.nickname.slice(0,1);const rx=maxLng-minLng<pad?0.5:(m.lng-minLng)/(maxLng-minLng);const ry=maxLat-minLat<pad?0.5:1-(m.lat-minLat)/(maxLat-minLat);dot.style.left=`${10+rx*80}%`;dot.style.top=`${10+ry*80}%`;map.appendChild(dot);});
+
+// ===== 天氣（Open-Meteo，免費無金鑰）=====
+async function fetchWeather(lat,lng){
+  try{
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`;
+    const r=await fetch(url);const j=await r.json();
+    if(j.current_weather){
+      const key=codeToWeather(j.current_weather.weathercode);
+      curWeather={key,temp:Math.round(j.current_weather.temperature)};
+      const w=WEATHER_MAP[key];
+      document.getElementById('wIcon').textContent=w.emoji;
+      document.getElementById('wTemp').textContent=curWeather.temp+'°C';
+      document.getElementById('wDesc').textContent=w.desc+' · 風速 '+Math.round(j.current_weather.windspeed)+' km/h';
+    }
+  }catch(e){
+    document.getElementById('wDesc').textContent='天氣取得失敗（可手動選）';
+  }
 }
-function switchTab(name){const names=['call','chat','location','members'];document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',names[i]===name));document.querySelectorAll('.panel').forEach((p,i)=>p.classList.toggle('active',names[i]===name));}
+
+// ===== Leaflet 地圖 =====
+let lmap=null,riderMarkers={},checkinMarkers=[],mapInited=false,followMe=true;
+let trackPoints=[],maxSpeed=0,trackSegLayers=[];
+function initLeafletMap(){
+  if(mapInited)return;mapInited=true;
+  lmap=L.map('leafletMap',{zoomControl:true,attributionControl:true,preferCanvas:true}).setView([25.0330,121.5654],15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(lmap);
+  lmap.on('dragstart',()=>{followMe=false;document.getElementById('recenterBtn').classList.remove('hidden');});
+  setTimeout(()=>lmap.invalidateSize(),200);
+  renderCheckinMarkers();
+}
+function makeRiderIcon(m){return L.divIcon({className:'',html:`<div class="rider-marker" style="background:${m.color||'#4cd964'}"><span>${escHtml(m.nickname.slice(0,1))}</span></div>`,iconSize:[32,32],iconAnchor:[16,32]});}
+// 斷點判斷：時間間隔 >15 秒 或 距離 >80 公尺
+const GAP_TIME=15000, GAP_DIST=0.08; // 公里
+function isGap(a,b){
+  if(a[2]!=null&&b[2]!=null&&(b[2]-a[2])>GAP_TIME)return true;
+  if(haversine(a[0],a[1],b[0],b[1])>GAP_DIST)return true;
+  return false;
+}
+// 把軌跡切成多段：[{pts:[...], gap:bool}]——gap 段是斷點補的虛線
+function splitTrack(track){
+  const segs=[];let cur=[track[0]];
+  for(let i=1;i<track.length;i++){
+    if(isGap(track[i-1],track[i])){
+      if(cur.length>1)segs.push({pts:cur,gap:false});
+      segs.push({pts:[track[i-1],track[i]],gap:true}); // 斷點補線段
+      cur=[track[i]];
+    }else cur.push(track[i]);
+  }
+  if(cur.length>1)segs.push({pts:cur,gap:false});
+  return segs;
+}
+function drawTrack(){
+  if(!mapInited||trackPoints.length<2)return;
+  trackSegLayers.forEach(l=>lmap.removeLayer(l));trackSegLayers=[];
+  splitTrack(trackPoints).forEach(seg=>{
+    const opts=seg.gap
+      ?{color:'#ffd166',weight:4,opacity:0.7,dashArray:'8 10',lineJoin:'round'}
+      :{color:'#4cd964',weight:5,opacity:0.85,lineJoin:'round'};
+    trackSegLayers.push(L.polyline(seg.pts.map(p=>[p[0],p[1]]),opts).addTo(lmap));
+  });
+}
+function updateMap(){
+  if(!mapInited)return;
+  const all=Object.entries(members).filter(([,m])=>m.lat!=null);
+  all.forEach(([pid,m])=>{
+    if(riderMarkers[pid]){riderMarkers[pid].setLatLng([m.lat,m.lng]);riderMarkers[pid].setIcon(makeRiderIcon(m));}
+    else{riderMarkers[pid]=L.marker([m.lat,m.lng],{icon:makeRiderIcon(m)}).addTo(lmap).bindPopup(escHtml(m.nickname));}
+  });
+  Object.keys(riderMarkers).forEach(pid=>{if(!members[pid]){lmap.removeLayer(riderMarkers[pid]);delete riderMarkers[pid];}});
+  if(followMe&&members[myId]&&members[myId].lat!=null)lmap.setView([members[myId].lat,members[myId].lng],lmap.getZoom(),{animate:true});
+}
+function recenterMap(){
+  followMe=true;document.getElementById('recenterBtn').classList.add('hidden');
+  const all=Object.entries(members).filter(([,m])=>m.lat!=null);if(!all.length)return;
+  if(all.length===1)lmap.setView([all[0][1].lat,all[0][1].lng],16);
+  else lmap.fitBounds(L.latLngBounds(all.map(([,m])=>[m.lat,m.lng])),{padding:[40,40],maxZoom:17});
+}
+function renderCheckinMarkers(){
+  if(!mapInited)return;
+  checkinMarkers.forEach(mk=>lmap.removeLayer(mk));checkinMarkers=[];
+  checkins.forEach(c=>{
+    if(c.lat==null)return;
+    const icon=L.divIcon({className:'',html:`<div class="checkin-marker">${WEATHER_MAP[c.weather]?.emoji||'📍'}</div>`,iconSize:[26,26],iconAnchor:[13,13]});
+    const mk=L.marker([c.lat,c.lng],{icon}).addTo(lmap).bindPopup(`<b>${escHtml(c.name)}</b><br>${escHtml(c.date)}`);
+    checkinMarkers.push(mk);
+  });
+}
+
+// ===== 打卡 + 記憶（localStorage）=====
+let checkins=[];
+const STORE_KEY='syue_lynn_checkins';
+function loadCheckins(){try{const d=localStorage.getItem(STORE_KEY);checkins=d?JSON.parse(d):[];}catch(e){checkins=[];}}
+function saveStore(){try{localStorage.setItem(STORE_KEY,JSON.stringify(checkins));}catch(e){alert('儲存失敗，可能是瀏覽器限制');}}
+function fmtNow(){
+  const d=new Date();const wd=['日','一','二','三','四','五','六'][d.getDay()];
+  return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（${wd}）${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+let pickedWeather='partly';
+function openCheckinModal(){
+  document.getElementById('ciName').value='';
+  document.getElementById('ciNote').value='';
+  document.getElementById('ciDate').value=fmtNow();
+  pickedWeather=curWeather.key||'partly';
+  const sub=document.getElementById('ciModalSub');
+  if(myLat!=null)sub.textContent=`位置已記錄 · ${curWeather.temp!=null?curWeather.temp+'°C':'天氣未取得'}`;
+  else sub.textContent='尚未開始定位，將只記錄日期與天氣';
+  renderWeatherPick();
+  document.getElementById('checkinModal').classList.remove('hidden');
+}
+function closeCheckinModal(){document.getElementById('checkinModal').classList.add('hidden');}
+function renderWeatherPick(){
+  const box=document.getElementById('weatherPick');box.innerHTML='';
+  WEATHER_KEYS.forEach(k=>{
+    const w=WEATHER_MAP[k];
+    const div=document.createElement('div');
+    div.className='wp-btn'+(k===pickedWeather?' sel':'');
+    div.innerHTML=`<span class="wp-emoji">${w.emoji}</span>${w.desc}`;
+    div.onclick=()=>{pickedWeather=k;renderWeatherPick();};
+    box.appendChild(div);
+  });
+}
+function saveCheckin(){
+  const name=document.getElementById('ciName').value.trim()||'未命名地點';
+  const date=document.getElementById('ciDate').value.trim()||fmtNow();
+  const note=document.getElementById('ciNote').value.trim();
+  checkins.unshift({id:Date.now(),name,date,note,weather:pickedWeather,temp:curWeather.temp,lat:myLat,lng:myLng,by:myNickname});
+  saveStore();renderCheckins();renderCheckinMarkers();closeCheckinModal();
+  switchTab('checkin');
+}
+function deleteCheckin(id){
+  if(!confirm('確定刪除這筆打卡？'))return;
+  checkins=checkins.filter(c=>c.id!==id);saveStore();renderCheckins();renderCheckinMarkers();
+}
+function renderCheckins(){
+  const list=document.getElementById('checkinList');
+  if(!checkins.length){list.innerHTML='<div class="empty">還沒有打卡記錄<br>騎乘時點「在這裡打卡」留下足跡 📸</div>';return;}
+  list.innerHTML='';
+  checkins.forEach(c=>{
+    const w=WEATHER_MAP[c.weather]||WEATHER_MAP.partly;
+    const div=document.createElement('div');div.className='checkin-entry';
+    div.innerHTML=`<div class="ci-head"><span class="ci-emoji">${w.emoji}</span><span class="ci-title">${escHtml(c.name)}</span><button class="ci-del" onclick="deleteCheckin(${c.id})">🗑</button></div>
+      <div class="ci-meta"><span>🗓 ${escHtml(c.date)}</span><span>${w.desc}${c.temp!=null?' '+c.temp+'°C':''}</span>${c.lat!=null?'<span>📍 已標記地圖</span>':''}</div>
+      ${c.by?`<div class="ci-meta"><span>✍️ ${escHtml(c.by)}</span></div>`:''}
+      ${c.note?`<div class="ci-note">${escHtml(c.note)}</div>`:''}`;
+    list.appendChild(div);
+  });
+}
+
+// ===== 匯出 / 匯入備份 =====
+function exportData(){
+  const blob=new Blob([JSON.stringify({app:'SyueLynnDiary',version:2,exported:fmtNow(),checkins,rides:loadRides()},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`騎乘日記備份_${new Date().toISOString().slice(0,10)}.json`;a.click();
+  URL.revokeObjectURL(a.href);
+}
+function importData(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const j=JSON.parse(ev.target.result);
+      if(!j.checkins||!Array.isArray(j.checkins))throw new Error('格式不符');
+      const existIds=new Set(checkins.map(c=>c.id));
+      let added=0;
+      j.checkins.forEach(c=>{if(!existIds.has(c.id)){checkins.push(c);added++;}});
+      checkins.sort((a,b)=>b.id-a.id);
+      saveStore();renderCheckins();renderCheckinMarkers();
+      // 合併路線記錄
+      if(Array.isArray(j.rides)){
+        const rides=loadRides();const rIds=new Set(rides.map(r=>r.id));let rAdd=0;
+        j.rides.forEach(r=>{if(!rIds.has(r.id)){rides.push(r);rAdd++;}});
+        rides.sort((a,b)=>b.id-a.id);
+        localStorage.setItem(RIDE_KEY,JSON.stringify(rides));renderRides();
+        alert(`匯入完成，新增 ${added} 筆打卡、${rAdd} 趟路線`);
+      }else{
+        alert(`匯入完成，新增 ${added} 筆打卡`);
+      }
+    }catch(err){alert('匯入失敗：'+err.message);}
+  };
+  reader.readAsText(file);
+  e.target.value='';
+}
+
+// ===== 其他 =====
+function switchTab(name){
+  const names=['ride','checkin','team'];
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',names[i]===name));
+  document.querySelectorAll('.panel').forEach((p,i)=>p.classList.toggle('active',names[i]===name));
+  if(name==='ride'&&mapInited)setTimeout(()=>{lmap.invalidateSize();updateMap();},150);
+}
 function copyRoomCode(){const code=document.getElementById('roomCodeBig').textContent;navigator.clipboard?.writeText(code).then(()=>alert('代碼已複製！')).catch(()=>prompt('複製此代碼：',code));}
-function leaveRoom(){if(!confirm('確定離開？'))return;Object.values(connections).forEach(c=>c.close());Object.values(audioConns).forEach(c=>c.close());if(localStream)localStream.getTracks().forEach(t=>t.stop());if(watchId)navigator.geolocation.clearWatch(watchId);if(sessionInterval)clearInterval(sessionInterval);if(animFrame)cancelAnimationFrame(animFrame);clearTimeout(waveTimer);peer?.destroy();location.reload();}
+function leaveRoom(){if(!confirm('確定離開房間？打卡記錄會保留'))return;Object.values(connections).forEach(c=>c.close());if(watchId)navigator.geolocation.clearWatch(watchId);if(sessionInterval)clearInterval(sessionInterval);if(reconnectTimer)clearInterval(reconnectTimer);peer?.destroy();location.reload();}
 function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-applyPowerMode();
-</script>
+
+// ===== 結束騎乘：路線總結 =====
+let routeMap=null,lastRideStats=null;
+function finishRide(){
+  if(trackPoints.length<2){alert('軌跡太短，還無法產生路線圖');return;}
+  const secs=Math.floor((pausedTime||(Date.now()-sessionStart))/1000);
+  const hrs=secs/3600;
+  const stats={
+    dist:+totalDist.toFixed(2),
+    timeStr:`${Math.floor(secs/60)}:${String(secs%60).padStart(2,'0')}`,
+    secs,
+    avg:hrs>0?+(totalDist/hrs).toFixed(1):0,
+    max:Math.round(maxSpeed),
+    pts:trackPoints.length,
+    track:trackPoints.slice(),
+    checkCount:checkins.filter(c=>c.lat!=null).length,
+    date:fmtNow()
+  };
+  lastRideStats=stats;
+  document.getElementById('rDist').textContent=stats.dist.toFixed(2);
+  document.getElementById('rTime').textContent=stats.timeStr;
+  document.getElementById('rAvg').textContent=stats.avg.toFixed(1);
+  document.getElementById('rMax').textContent=stats.max;
+  document.getElementById('rPts').textContent=stats.pts;
+  document.getElementById('rCheck').textContent=stats.checkCount;
+  document.getElementById('rideName').value='';
+  document.getElementById('routeModalSub').textContent=`${stats.date} · 共 ${stats.dist} 公里`;
+  document.getElementById('routeModal').classList.remove('hidden');
+  setTimeout(()=>drawRouteMap(stats.track),150);
+}
+function drawRouteMap(track){
+  if(!routeMap){
+    routeMap=L.map('routeMap',{zoomControl:true,attributionControl:true,preferCanvas:true});
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(routeMap);
+  }
+  routeMap.eachLayer(l=>{if(l instanceof L.Polyline||l instanceof L.Marker)routeMap.removeLayer(l);});
+  // 分段：實線=真實軌跡，虛線=斷點補接
+  const segs=splitTrack(track);let gapCount=0;
+  segs.forEach(seg=>{
+    const opts=seg.gap
+      ?{color:'#ffd166',weight:4,opacity:0.75,dashArray:'8 10',lineJoin:'round'}
+      :{color:'#4cd964',weight:5,opacity:0.9,lineJoin:'round'};
+    L.polyline(seg.pts.map(p=>[p[0],p[1]]),opts).addTo(routeMap);
+    if(seg.gap){
+      gapCount++;
+      const mid=seg.pts[0]; // 在斷點起始處放問號標記
+      L.marker([mid[0],mid[1]],{icon:L.divIcon({className:'',html:'<div class="checkin-marker" style="font-size:16px;">❓</div>',iconSize:[20,20],iconAnchor:[10,10]})}).addTo(routeMap).bindPopup('此段可能因關螢幕未記錄，為直線推測');
+    }
+  });
+  // 起點 / 終點
+  L.marker(track[0],{icon:L.divIcon({className:'',html:'<div class="checkin-marker">🟢</div>',iconSize:[24,24],iconAnchor:[12,12]})}).addTo(routeMap).bindPopup('起點');
+  L.marker(track[track.length-1],{icon:L.divIcon({className:'',html:'<div class="checkin-marker">🏁</div>',iconSize:[24,24],iconAnchor:[12,12]})}).addTo(routeMap).bindPopup('終點');
+  checkins.forEach(c=>{if(c.lat!=null)L.marker([c.lat,c.lng],{icon:L.divIcon({className:'',html:`<div class="checkin-marker">${WEATHER_MAP[c.weather]?.emoji||'📍'}</div>`,iconSize:[22,22],iconAnchor:[11,11]})}).addTo(routeMap).bindPopup(escHtml(c.name));});
+  routeMap.invalidateSize();
+  routeMap.fitBounds(L.latLngBounds(track.map(p=>[p[0],p[1]])),{padding:[30,30]});
+  // 顯示斷點提示
+  const gapInfo=document.getElementById('gapInfo');
+  if(gapInfo)gapInfo.textContent=gapCount>0?`⚠️ 偵測到 ${gapCount} 段可能因關螢幕中斷（黃色虛線為推測直線）`:'✅ 全程連續記錄，無中斷';
+}
+function closeRouteModal(){document.getElementById('routeModal').classList.add('hidden');}
+function saveRide(){
+  if(!lastRideStats)return;
+  const name=document.getElementById('rideName').value.trim()||('騎乘 '+lastRideStats.date);
+  const rides=loadRides();
+  rides.unshift({id:Date.now(),name,...lastRideStats});
+  try{localStorage.setItem(RIDE_KEY,JSON.stringify(rides));}catch(e){alert('儲存失敗');return;}
+  alert('已儲存這趟路線！可在打卡頁下方查看');
+  renderRides();
+  closeRouteModal();
+  // 重置本趟
+  resetRide();
+}
+function resetRide(){
+  trackPoints=[];maxSpeed=0;totalDist=0;sessionStart=null;pausedTime=0;
+  if(mapInited){trackSegLayers.forEach(l=>lmap.removeLayer(l));trackSegLayers=[];}
+  document.getElementById('speedVal').textContent='0';
+  document.getElementById('distVal').textContent='0.0';
+  document.getElementById('timeVal').textContent='0:00';
+  document.getElementById('avgVal').textContent='0.0';
+  document.getElementById('gpsBtn').textContent='📍 開始騎乘記錄';
+  document.getElementById('finishBtn').classList.add('hidden');
+}
+
+// ===== 路線圖片匯出（SVG → PNG）=====
+function exportRideImage(){
+  if(!lastRideStats)return;
+  const t=lastRideStats.track;
+  const lats=t.map(p=>p[0]),lngs=t.map(p=>p[1]);
+  const minLat=Math.min(...lats),maxLat=Math.max(...lats),minLng=Math.min(...lngs),maxLng=Math.max(...lngs);
+  const W=800,H=800,pad=80;
+  const sx=v=>{const r=(maxLng-minLng)||1e-6;return pad+(v-minLng)/r*(W-2*pad);};
+  const sy=v=>{const r=(maxLat-minLat)||1e-6;return H-pad-(v-minLat)/r*(H-2*pad-120);};
+  // 分段繪製：實線（真實）+ 虛線（斷點推測）
+  const segs=splitTrack(t);
+  let paths='';
+  segs.forEach(seg=>{
+    const d=seg.pts.map((p,i)=>(i?'L':'M')+sx(p[1]).toFixed(1)+' '+sy(p[0]).toFixed(1)).join(' ');
+    if(seg.gap)paths+=`<path d="${d}" fill="none" stroke="#ffd166" stroke-width="5" stroke-dasharray="10 12" stroke-linejoin="round" stroke-linecap="round"/>`;
+    else paths+=`<path d="${d}" fill="none" stroke="#4cd964" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>`;
+  });
+  const s=lastRideStats;
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+    <rect width="${W}" height="${H}" fill="#0a1118"/>
+    <text x="40" y="56" fill="#f4f7fb" font-size="30" font-weight="800" font-family="sans-serif">Syue &amp; Lynn 的騎乘日記</text>
+    <text x="40" y="90" fill="#93a4b5" font-size="18" font-family="sans-serif">${escHtml(s.date)}</text>
+    ${paths}
+    <circle cx="${sx(t[0][1]).toFixed(1)}" cy="${sy(t[0][0]).toFixed(1)}" r="11" fill="#4cd964" stroke="#fff" stroke-width="3"/>
+    <circle cx="${sx(t[t.length-1][1]).toFixed(1)}" cy="${sy(t[t.length-1][0]).toFixed(1)}" r="11" fill="#ff5a5f" stroke="#fff" stroke-width="3"/>
+    <text x="40" y="${H-78}" fill="#4cd964" font-size="46" font-weight="850" font-family="sans-serif">${s.dist} km</text>
+    <text x="40" y="${H-44}" fill="#93a4b5" font-size="20" font-family="sans-serif">時間 ${s.timeStr}　·　均速 ${s.avg} km/h　·　最高 ${s.max} km/h</text>
+  </svg>`;
+  const img=new Image();
+  const blob=new Blob([svg],{type:'image/svg+xml;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  img.onload=()=>{
+    const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;
+    const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0);
+    URL.revokeObjectURL(url);
+    canvas.toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`路線_${new Date().toISOString().slice(0,10)}.png`;a.click();URL.revokeObjectURL(a.href);});
+  };
+  img.onerror=()=>{alert('圖片產生失敗，可改用截圖');URL.revokeObjectURL(url);};
+  img.src=url;
+}
+
+// ===== 已儲存的騎乘記錄 =====
+const RIDE_KEY='syue_lynn_rides';
+function loadRides(){try{const d=localStorage.getItem(RIDE_KEY);return d?JSON.parse(d):[];}catch(e){return[];}}
+function renderRides(){
+  const box=document.getElementById('rideList');if(!box)return;
+  const rides=loadRides();
+  if(!rides.length){box.innerHTML='';return;}
+  box.innerHTML='<div class="card-title" style="margin-top:8px;">已儲存的路線</div>';
+  rides.forEach(r=>{
+    const div=document.createElement('div');div.className='checkin-entry';
+    div.innerHTML=`<div class="ci-head"><span class="ci-emoji">🚴</span><span class="ci-title">${escHtml(r.name)}</span><button class="ci-del" onclick="deleteRide(${r.id})">🗑</button></div>
+      <div class="ci-meta"><span>🗓 ${escHtml(r.date)}</span></div>
+      <div class="ci-meta"><span>📏 ${r.dist} km</span><span>⏱ ${r.timeStr}</span><span>⚡ 均速 ${r.avg}</span><span>🔥 最高 ${r.max}</span></div>
+      <button class="btn btn-blue" style="margin-top:8px;" onclick='replayRide(${r.id})'>🗺 查看路線圖</button>`;
+    box.appendChild(div);
+  });
+}
+function deleteRide(id){
+  if(!confirm('確定刪除這趟路線記錄？'))return;
+  const rides=loadRides().filter(r=>r.id!==id);
+  localStorage.setItem(RIDE_KEY,JSON.stringify(rides));renderRides();
+}
+function replayRide(id){
+  const r=loadRides().find(x=>x.id===id);if(!r)return;
+  lastRideStats=r;
+  document.getElementById('rDist').textContent=r.dist.toFixed(2);
+  document.getElementById('rTime').textContent=r.timeStr;
+  document.getElementById('rAvg').textContent=r.avg.toFixed(1);
+  document.getElementById('rMax').textContent=r.max;
+  document.getElementById('rPts').textContent=r.pts;
+  document.getElementById('rCheck').textContent=r.checkCount||0;
+  document.getElementById('rideName').value=r.name;
+  document.getElementById('routeModalSub').textContent=`${r.date} · 共 ${r.dist} 公里`;
+  document.getElementById('routeModal').classList.remove('hidden');
+  setTimeout(()=>drawRouteMap(r.track),150);
+}
+
+// ===== 暱稱與房間記憶 =====
+const NICK_KEY='syue_lynn_nicks';   // 用過的暱稱清單（最近在前）
+const ROOM_KEY='syue_lynn_rooms';   // 最近房間 [{code,nick,host,ts}]
+function loadNicks(){try{return JSON.parse(localStorage.getItem(NICK_KEY))||[];}catch(e){return[];}}
+function saveNickname(n){
+  if(!n||n==='騎士')return;
+  let arr=loadNicks().filter(x=>x!==n);
+  arr.unshift(n);arr=arr.slice(0,5);
+  try{localStorage.setItem(NICK_KEY,JSON.stringify(arr));}catch(e){}
+}
+function loadRooms(){try{return JSON.parse(localStorage.getItem(ROOM_KEY))||[];}catch(e){return[];}}
+function rememberRoom(code,nick,host,fixed){
+  let arr=loadRooms().filter(r=>r.code!==code);
+  arr.unshift({code,nick,host,fixed:!!fixed,ts:Date.now()});arr=arr.slice(0,6);
+  try{localStorage.setItem(ROOM_KEY,JSON.stringify(arr));}catch(e){}
+}
+function deleteRoom(code,ev){
+  ev&&ev.stopPropagation();
+  const arr=loadRooms().filter(r=>r.code!==code);
+  localStorage.setItem(ROOM_KEY,JSON.stringify(arr));
+  renderRecent();
+}
+function renderRecent(){
+  // 暱稱：自動帶入最近一次 + 其他做成快捷晶片
+  const nicks=loadNicks();
+  const nickInput=document.getElementById('nicknameInput');
+  if(nicks.length&&!nickInput.value)nickInput.value=nicks[0];
+  const nq=document.getElementById('nickQuick');nq.innerHTML='';
+  nicks.forEach(n=>{
+    const chip=document.createElement('div');chip.className='quick-chip';
+    chip.innerHTML=`👤 ${escHtml(n)}`;
+    chip.onclick=()=>{nickInput.value=n;};
+    nq.appendChild(chip);
+  });
+  // 最近房間
+  const rooms=loadRooms();
+  const card=document.getElementById('recentRoomCard');
+  const box=document.getElementById('recentRooms');
+  if(!rooms.length){card.style.display='none';return;}
+  card.style.display='';
+  box.innerHTML='';
+  rooms.forEach(r=>{
+    const div=document.createElement('div');div.className='recent-room';
+    div.onclick=()=>{
+      document.getElementById('nicknameInput').value=r.nick||document.getElementById('nicknameInput').value;
+      if(r.host){
+        if(r.fixed){
+          // 固定代碼：用同一代碼重新建立房間
+          const cid=r.code.replace(/^syuelynn-/,'');
+          document.getElementById('customIdInput').value=cid;
+          createRoom();
+        }else{
+          alert('這是上次隨機建立的房間，代碼無法重用。請改用「建立新房間」，或下次建立時填「自訂固定代碼」就能重複使用。');
+        }
+      }else{
+        quickJoin(r.code);
+      }
+    };
+    const when=fmtAgo(r.ts);
+    const label=r.host?(r.fixed?'我的固定房間':'我建立的房間'):'隊友房間';
+    const showCode=r.code.replace(/^syuelynn-/,'');
+    div.innerHTML=`<span class="rr-icon">${r.host?(r.fixed?'⭐':'🏠'):'🔗'}</span>
+      <div class="rr-info"><div class="rr-name">${label} · ${escHtml(r.nick||'')}</div>
+      <div class="rr-code">${escHtml(showCode)} · ${when}</div></div>
+      <button class="rr-del" onclick="deleteRoom('${r.code.replace(/'/g,"\\'")}',event)">🗑</button>`;
+    box.appendChild(div);
+  });
+}
+function fmtAgo(ts){
+  if(!ts)return'';
+  const s=Math.floor((Date.now()-ts)/1000);
+  if(s<60)return'剛剛';
+  if(s<3600)return Math.floor(s/60)+' 分鐘前';
+  if(s<86400)return Math.floor(s/3600)+' 小時前';
+  return Math.floor(s/86400)+' 天前';
+}
+
+// 啟動載入記憶
+loadCheckins();
+renderRecent();</script>
 </body>
 </html>
