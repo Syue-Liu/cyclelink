@@ -8,48 +8,65 @@
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <style>
   :root {
-    --bg: #0d1117; --surface: #161b22; --surface2: #21262d; --border: #30363d;
-    --green: #3fb950; --green-dim: #1a4a26; --blue: #58a6ff; --red: #f85149;
-    --text: #e6edf3; --muted: #8b949e; --accent: #2ea043;
+    --bg: #080d12; --surface: #111821; --surface2: #1a2430; --surface3: #202c38; --border: #2b3946;
+    --green: #4cd964; --green-dim: #15391f; --blue: #58a6ff; --teal: #38d9c7; --amber: #ffd166; --red: #ff5a5f;
+    --text: #f4f7fb; --muted: #93a4b5; --accent: #25b85a; --shadow: 0 18px 48px rgba(0,0,0,0.34);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
-    background: var(--bg); color: var(--text);
+    background:
+      radial-gradient(circle at 18% -10%, rgba(56,217,199,0.18), transparent 32%),
+      radial-gradient(circle at 94% 8%, rgba(255,209,102,0.11), transparent 24%),
+      linear-gradient(180deg, #0a1118 0%, var(--bg) 44%, #070a0f 100%);
+    color: var(--text);
     min-height: 100vh; max-width: 480px; margin: 0 auto;
   }
   .header {
-    background: var(--surface); border-bottom: 1px solid var(--border);
-    padding: 12px 16px; display: flex; align-items: center;
-    justify-content: space-between; position: sticky; top: 0; z-index: 10;
+    background: rgba(17,24,33,0.9); border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: calc(10px + env(safe-area-inset-top)) 16px 12px; display: flex; align-items: center;
+    justify-content: space-between; position: sticky; top: 0; z-index: 10; backdrop-filter: blur(18px);
   }
   .logo { display: flex; align-items: center; gap: 8px; }
-  .logo-icon { width: 32px; height: 32px; background: var(--green); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .logo-icon { width: 34px; height: 34px; background: linear-gradient(135deg, var(--green), var(--teal)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 8px 22px rgba(37,184,90,0.28); }
   .logo-text { font-size: 17px; font-weight: 700; }
   .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); transition: background 0.3s; }
   .status-dot.online { background: var(--green); box-shadow: 0 0 6px var(--green); }
-  .tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); }
-  .tab { flex: 1; padding: 12px 4px; text-align: center; font-size: 13px; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
-  .tab.active { color: var(--green); border-bottom-color: var(--green); }
+  .tabs { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; background: rgba(8,13,18,0.78); border-bottom: 1px solid rgba(255,255,255,0.07); padding: 8px 10px; position: sticky; top: 57px; z-index: 9; backdrop-filter: blur(16px); }
+  .tab { min-height: 46px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-align: center; font-size: 11px; color: var(--muted); cursor: pointer; border: 1px solid transparent; border-radius: 8px; transition: all 0.2s; }
+  .tab-icon { font-size: 17px; line-height: 1; }
+  .tab.active { color: var(--text); background: rgba(76,217,100,0.12); border-color: rgba(76,217,100,0.32); }
   .panel { display: none; padding: 16px; }
   .panel.active { display: block; }
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
-  .card-title { font-size: 13px; color: var(--muted); margin-bottom: 10px; font-weight: 500; }
-  input[type="text"] { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 16px; padding: 10px 12px; outline: none; transition: border-color 0.2s; }
+  .hero { text-align:center; padding: 24px 0 14px; }
+  .hero-icon { width: 78px; height: 78px; margin: 0 auto 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 42px; background: linear-gradient(145deg, rgba(76,217,100,0.2), rgba(88,166,255,0.16)); border: 1px solid rgba(255,255,255,0.1); box-shadow: var(--shadow); }
+  .hero-title { font-size: 25px; font-weight: 800; margin-bottom: 4px; }
+  .hero-sub { font-size: 13px; color: var(--muted); }
+  .card { background: rgba(17,24,33,0.88); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 16px; margin-bottom: 12px; box-shadow: 0 12px 30px rgba(0,0,0,0.18); }
+  .card-title { font-size: 12px; color: var(--muted); margin-bottom: 10px; font-weight: 700; text-transform: uppercase; }
+  input[type="text"] { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 16px; padding: 13px 12px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
   input[type="text"]:focus { border-color: var(--blue); }
-  .btn { width: 100%; padding: 14px; border-radius: 10px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.15s; margin-top: 8px; }
-  .btn-green { background: var(--accent); color: #fff; }
-  .btn-blue { background: #1a4a6e; color: var(--blue); }
-  .btn-red { background: #3a1a1a; color: var(--red); }
+  .btn { width: 100%; padding: 15px; border-radius: 8px; border: 1px solid transparent; font-size: 15px; font-weight: 750; cursor: pointer; transition: all 0.15s; margin-top: 8px; }
+  .btn-green { background: linear-gradient(135deg, var(--accent), #35ce7d); color: #fff; box-shadow: 0 10px 24px rgba(37,184,90,0.24); }
+  .btn-blue { background: rgba(88,166,255,0.16); color: #9dccff; border-color: rgba(88,166,255,0.25); }
+  .btn-red { background: rgba(255,90,95,0.12); color: #ff8b8f; border-color: rgba(255,90,95,0.22); }
+  .btn-ghost { background: rgba(255,255,255,0.06); color: var(--text); border-color: rgba(255,255,255,0.08); }
   .btn:active { transform: scale(0.97); }
-  .call-section { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 20px 0 8px; }
-  .call-avatar { width: 120px; height: 120px; border-radius: 50%; background: var(--surface2); border: 3px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 48px; transition: all 0.3s; }
-  .call-avatar.active { border-color: var(--green); box-shadow: 0 0 0 6px rgba(63,185,80,0.15), 0 0 0 12px rgba(63,185,80,0.07); }
-  .call-status-text { font-size: 16px; font-weight: 600; min-height: 22px; text-align: center; }
+  .mode-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: linear-gradient(135deg, rgba(56,217,199,0.12), rgba(255,209,102,0.1)); }
+  .mode-title { font-size: 15px; font-weight: 800; }
+  .mode-sub { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.35; }
+  .switch { width: 58px; height: 34px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); background: var(--surface3); padding: 3px; flex-shrink: 0; cursor: pointer; transition: background 0.2s; }
+  .switch-knob { width: 26px; height: 26px; border-radius: 50%; background: #d7dee8; transition: transform 0.2s, background 0.2s; }
+  .switch.on { background: rgba(76,217,100,0.28); border-color: rgba(76,217,100,0.45); }
+  .switch.on .switch-knob { transform: translateX(24px); background: var(--green); }
+  .call-section { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 16px 0 8px; }
+  .call-avatar { width: 118px; height: 118px; border-radius: 50%; background: radial-gradient(circle at 35% 25%, #26384b, var(--surface2)); border: 3px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 48px; transition: all 0.3s; }
+  .call-avatar.active { border-color: var(--green); box-shadow: 0 0 0 6px rgba(76,217,100,0.14), 0 0 0 14px rgba(56,217,199,0.07); }
+  .call-status-text { font-size: 18px; font-weight: 800; min-height: 22px; text-align: center; }
   .call-status-sub { font-size: 13px; color: var(--muted); text-align: center; min-height: 18px; }
   .wave-row { display: flex; align-items: flex-end; gap: 3px; height: 28px; }
   .wave-bar { width: 4px; border-radius: 2px; background: var(--green); transition: height 0.1s; min-height: 4px; }
-  .mute-btn { width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--border); background: var(--surface2); font-size: 26px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .mute-btn { width: 68px; height: 68px; border-radius: 50%; border: 2px solid var(--border); background: var(--surface2); font-size: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
   .mute-btn.muted { background: #3a1a1a; border-color: var(--red); }
   .mute-btn:active { transform: scale(0.93); }
   .mute-label { font-size: 11px; color: var(--muted); text-align: center; margin-top: 4px; }
@@ -69,12 +86,12 @@
   .chat-input-row input { flex: 1; }
   .send-btn { width: 46px; height: 46px; border-radius: 10px; background: var(--accent); border: none; color: #fff; font-size: 20px; cursor: pointer; flex-shrink: 0; }
   .send-btn:active { transform: scale(0.95); }
-  .map-placeholder { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; height: 200px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; color: var(--muted); font-size: 14px; margin-bottom: 12px; position: relative; overflow: hidden; }
+  .map-placeholder { background: linear-gradient(160deg, rgba(32,44,56,0.95), rgba(12,18,24,0.95)); border: 1px solid var(--border); border-radius: 8px; height: 216px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; color: var(--muted); font-size: 14px; margin-bottom: 12px; position: relative; overflow: hidden; }
   .map-grid { position: absolute; inset: 0; background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: 30px 30px; opacity: 0.4; }
   .rider-dot { position: absolute; width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--bg); transform: translate(-50%, -50%); font-size: 9px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; transition: all 0.8s ease; }
-  .speed-row { display: flex; gap: 10px; margin-bottom: 12px; }
-  .stat-box { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 6px; text-align: center; }
-  .stat-value { font-size: 22px; font-weight: 700; color: var(--green); }
+  .speed-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 12px; }
+  .stat-box { background: rgba(17,24,33,0.88); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 13px 6px; text-align: center; }
+  .stat-value { font-size: 23px; font-weight: 850; color: var(--green); }
   .stat-unit { font-size: 11px; color: var(--muted); margin-top: 2px; }
   .member { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
   .member:last-child { border-bottom: none; }
@@ -85,6 +102,10 @@
   .tag { display: inline-block; padding: 2px 7px; border-radius: 12px; font-size: 11px; font-weight: 600; }
   .tag-green { background: var(--green-dim); color: var(--green); }
   .notice { font-size: 12px; color: var(--muted); text-align: center; padding: 8px; line-height: 1.5; }
+  .pill-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .pill { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px; }
+  .pill-label { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+  .pill-value { font-size: 13px; font-weight: 800; }
   .hidden { display: none !important; }
   .room-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 12px; font-family: monospace; cursor: pointer; }
   @keyframes speaking-pulse { 0%,100% { height: 4px; } 50% { height: 18px; } }
@@ -93,6 +114,13 @@
   .speaking .sp-bar:nth-child(3) { animation: speaking-pulse 0.6s infinite 0.2s; }
   .speaking .sp-bar:nth-child(4) { animation: speaking-pulse 0.6s infinite 0.1s; }
   .speaking .sp-bar:nth-child(5) { animation: speaking-pulse 0.6s infinite 0s; }
+  body.power-save .speaking .sp-bar { animation: none; height: 4px !important; background: var(--amber); }
+  body.power-save .call-avatar.active { box-shadow: 0 0 0 6px rgba(255,209,102,0.12); border-color: var(--amber); }
+  body.power-save .wave-bar { background: var(--amber); }
+  body.power-save .rider-dot { transition: none; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
 </style>
 </head>
 <body>
@@ -106,10 +134,17 @@
 </div>
 
 <div id="setupScreen" style="padding:16px;">
-  <div style="text-align:center;padding:24px 0 16px;">
-    <div style="font-size:48px;margin-bottom:8px;">🚴‍♂️</div>
-    <div style="font-size:20px;font-weight:700;margin-bottom:4px;">CycleLink</div>
-    <div style="font-size:13px;color:var(--muted);">免持通話 · 位置共享 · 即時聊天</div>
+  <div class="hero">
+    <div class="hero-icon">🚴‍♂️</div>
+    <div class="hero-title">CycleLink</div>
+    <div class="hero-sub">免持通話 · 位置共享 · 即時聊天</div>
+  </div>
+  <div class="card mode-card">
+    <div>
+      <div class="mode-title">騎乘省電模式</div>
+      <div class="mode-sub" id="powerModeTextSetup">GPS 降頻、波形減少，適合同時開 Pikmin。</div>
+    </div>
+    <button class="switch" id="powerSwitchSetup" onclick="togglePowerSaver()" aria-label="切換省電模式"><span class="switch-knob"></span></button>
   </div>
   <div class="card">
     <div class="card-title">你的暱稱</div>
@@ -129,13 +164,20 @@
 
 <div id="mainApp" class="hidden">
   <div class="tabs">
-    <div class="tab active" onclick="switchTab('call')">📞 通話</div>
-    <div class="tab" onclick="switchTab('chat')">💬 聊天</div>
-    <div class="tab" onclick="switchTab('location')">📍 位置</div>
-    <div class="tab" onclick="switchTab('members')">👥 成員</div>
+    <div class="tab active" onclick="switchTab('call')"><span class="tab-icon">📞</span><span>通話</span></div>
+    <div class="tab" onclick="switchTab('chat')"><span class="tab-icon">💬</span><span>聊天</span></div>
+    <div class="tab" onclick="switchTab('location')"><span class="tab-icon">📍</span><span>位置</span></div>
+    <div class="tab" onclick="switchTab('members')"><span class="tab-icon">👥</span><span>成員</span></div>
   </div>
 
   <div class="panel active" id="tab-call">
+    <div class="card mode-card">
+      <div>
+        <div class="mode-title">騎乘省電模式</div>
+        <div class="mode-sub" id="powerModeTextMain">GPS 每 12 秒分享，音量動畫降頻。</div>
+      </div>
+      <button class="switch" id="powerSwitchMain" onclick="togglePowerSaver()" aria-label="切換省電模式"><span class="switch-knob"></span></button>
+    </div>
     <div class="call-section">
       <div class="call-avatar active" id="callAvatar">🎙️</div>
       <div class="call-status-text" id="callStatusText">連線中...</div>
@@ -162,6 +204,10 @@
   </div>
 
   <div class="panel" id="tab-location">
+    <div class="pill-row">
+      <div class="pill"><div class="pill-label">定位模式</div><div class="pill-value" id="gpsModeLabel">省電定位</div></div>
+      <div class="pill"><div class="pill-label">分享頻率</div><div class="pill-value" id="gpsShareLabel">每 12 秒</div></div>
+    </div>
     <div class="speed-row">
       <div class="stat-box"><div class="stat-value" id="speedVal">—</div><div class="stat-unit">km/h</div></div>
       <div class="stat-box"><div class="stat-value" id="distVal">0.0</div><div class="stat-unit">km 距離</div></div>
@@ -174,6 +220,7 @@
       </div>
     </div>
     <button class="btn btn-green" id="gpsBtn" onclick="startGPS()">📍 開啟 GPS 定位</button>
+    <button class="btn btn-ghost hidden" id="gpsStopBtn" onclick="stopGPS()">停止定位分享</button>
     <div class="notice" style="margin-top:8px;">位置僅分享給同房間成員</div>
   </div>
 
@@ -194,9 +241,31 @@ let localStream=null,isHost=false,isMuted=false;
 let watchId=null,sessionStart=null,sessionInterval=null;
 let myLat=null,myLng=null,totalDist=0;
 let audioCtx=null,analyser=null,analyserData=null,animFrame=null;
+let powerSaver=true,lastLocationShare=0,lastMapUpdate=0,waveTimer=null;
 const COLORS=['#f85149','#f0883e','#3fb950','#58a6ff','#d2a8ff','#ffa657','#79c0ff'];
 let colorIdx=0;
 function nextColor(){return COLORS[colorIdx++%COLORS.length];}
+function gpsShareInterval(){return powerSaver?12000:3000;}
+function mapUpdateInterval(){return powerSaver?5000:1000;}
+function waveInterval(){return powerSaver?500:100;}
+
+function togglePowerSaver(){
+  powerSaver=!powerSaver;
+  applyPowerMode();
+  if(!document.getElementById('mainApp').classList.contains('hidden'))addSysMsg(powerSaver?'已開啟騎乘省電模式':'已切回即時模式');
+}
+function applyPowerMode(){
+  document.body.classList.toggle('power-save',powerSaver);
+  ['powerSwitchSetup','powerSwitchMain'].forEach(id=>document.getElementById(id)?.classList.toggle('on',powerSaver));
+  const setupText=document.getElementById('powerModeTextSetup');
+  const mainText=document.getElementById('powerModeTextMain');
+  const label=document.getElementById('gpsModeLabel');
+  const share=document.getElementById('gpsShareLabel');
+  if(setupText)setupText.textContent=powerSaver?'GPS 降頻、波形減少，適合同時開 Pikmin。':'即時顯示較順暢，但比較耗電。';
+  if(mainText)mainText.textContent=powerSaver?'GPS 每 12 秒分享，音量動畫降頻。':'GPS 每 3 秒分享，音量動畫較即時。';
+  if(label)label.textContent=powerSaver?'省電定位':'即時定位';
+  if(share)share.textContent=powerSaver?'每 12 秒':'每 3 秒';
+}
 
 function createRoom(){
   myNickname=(document.getElementById('nicknameInput').value.trim()||'騎士');isHost=true;
@@ -256,10 +325,12 @@ function setupAnalyser(){
   analyserData=new Uint8Array(analyser.frequencyBinCount);animWave();
 }
 function animWave(){
+  if(!analyser)return;
   analyser.getByteFrequencyData(analyserData);
   const bars=document.getElementById('myWave')?.children;
   if(bars){for(let i=0;i<bars.length;i++){bars[i].style.height=(isMuted?4:Math.max(4,(analyserData[i*3]/255)*28))+'px';}}
-  animFrame=requestAnimationFrame(animWave);
+  clearTimeout(waveTimer);
+  waveTimer=setTimeout(()=>{animFrame=requestAnimationFrame(animWave);},waveInterval());
 }
 function toggleMute(){
   isMuted=!isMuted;
@@ -275,6 +346,7 @@ function enterApp(){
   document.getElementById('setupScreen').classList.add('hidden');
   document.getElementById('mainApp').classList.remove('hidden');
   document.getElementById('statusDot').classList.add('online');
+  applyPowerMode();
   renderMembers();renderCallPeers();updateCallStatus();
 }
 function setRoomUI(code){document.getElementById('roomIdDisplay').textContent=code.slice(0,8)+'...';document.getElementById('roomBadge').classList.remove('hidden');document.getElementById('roomCodeBig').textContent=code;}
@@ -300,13 +372,16 @@ function renderMembers(){
 }
 function sendMessage(){const inp=document.getElementById('chatInput');const t=inp.value.trim();if(!t)return;inp.value='';addChatMsg(t,myNickname,true);broadcast({type:'msg',text:t,nickname:myNickname},null);}
 function addChatMsg(text,sender,isMine){const list=document.getElementById('messageList');const div=document.createElement('div');div.className='msg '+(isMine?'mine':'other');div.innerHTML=(isMine?'':`<div class="msg-sender">${escHtml(sender)}</div>`)+escHtml(text);list.appendChild(div);list.scrollTop=list.scrollHeight;}
-function addSysMsg(text){const list=document.getElementById('messageList');const div=document.createElement('div');div.className='msg system';div.textContent=text;list.appendChild(div);list.scrollTop=list.scrollHeight;}
+function addSysMsg(text){const list=document.getElementById('messageList');if(!list)return;const div=document.createElement('div');div.className='msg system';div.textContent=text;list.appendChild(div);list.scrollTop=list.scrollHeight;}
 function startGPS(){
   if(!navigator.geolocation){alert('不支援 GPS');return;}
+  if(watchId)return;
   document.getElementById('gpsBtn').textContent='⏳ 定位中...';document.getElementById('gpsBtn').disabled=true;
+  document.getElementById('gpsStopBtn').classList.remove('hidden');
   sessionStart=Date.now();
   sessionInterval=setInterval(()=>{const s=Math.floor((Date.now()-sessionStart)/1000);document.getElementById('timeVal').textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;},1000);
   watchId=navigator.geolocation.watchPosition(pos=>{
+    const now=Date.now();
     const lat=pos.coords.latitude,lng=pos.coords.longitude;
     const spd=pos.coords.speed!=null?(pos.coords.speed*3.6).toFixed(1):'—';
     document.getElementById('speedVal').textContent=spd;
@@ -314,8 +389,19 @@ function startGPS(){
     if(myLat!==null)totalDist+=haversine(myLat,myLng,lat,lng);
     myLat=lat;myLng=lng;document.getElementById('distVal').textContent=totalDist.toFixed(2);
     if(members[myId]){members[myId].lat=lat;members[myId].lng=lng;}
-    updateMap();broadcast({type:'location',lat,lng},null);
-  },err=>{document.getElementById('gpsBtn').textContent='📍 重試';document.getElementById('gpsBtn').disabled=false;alert('定位失敗：'+err.message);},{enableHighAccuracy:true,maximumAge:3000});
+    if(now-lastMapUpdate>=mapUpdateInterval()){updateMap();lastMapUpdate=now;}
+    if(now-lastLocationShare>=gpsShareInterval()){broadcast({type:'location',lat,lng},null);lastLocationShare=now;}
+  },err=>{document.getElementById('gpsBtn').textContent='📍 重試';document.getElementById('gpsBtn').disabled=false;document.getElementById('gpsStopBtn').classList.add('hidden');alert('定位失敗：'+err.message);},{enableHighAccuracy:!powerSaver,maximumAge:powerSaver?10000:3000,timeout:15000});
+}
+function stopGPS(){
+  if(watchId)navigator.geolocation.clearWatch(watchId);
+  watchId=null;
+  if(sessionInterval)clearInterval(sessionInterval);
+  sessionInterval=null;
+  document.getElementById('gpsBtn').textContent='📍 開啟 GPS 定位';
+  document.getElementById('gpsBtn').disabled=false;
+  document.getElementById('gpsStopBtn').classList.add('hidden');
+  addSysMsg('已停止定位分享');
 }
 function haversine(lat1,lng1,lat2,lng2){const R=6371,dL=(lat2-lat1)*Math.PI/180,dG=(lng2-lng1)*Math.PI/180;const a=Math.sin(dL/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dG/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
 function updateMap(){
@@ -327,8 +413,9 @@ function updateMap(){
 }
 function switchTab(name){const names=['call','chat','location','members'];document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',names[i]===name));document.querySelectorAll('.panel').forEach((p,i)=>p.classList.toggle('active',names[i]===name));}
 function copyRoomCode(){const code=document.getElementById('roomCodeBig').textContent;navigator.clipboard?.writeText(code).then(()=>alert('代碼已複製！')).catch(()=>prompt('複製此代碼：',code));}
-function leaveRoom(){if(!confirm('確定離開？'))return;Object.values(connections).forEach(c=>c.close());Object.values(audioConns).forEach(c=>c.close());if(localStream)localStream.getTracks().forEach(t=>t.stop());if(watchId)navigator.geolocation.clearWatch(watchId);if(sessionInterval)clearInterval(sessionInterval);if(animFrame)cancelAnimationFrame(animFrame);peer?.destroy();location.reload();}
+function leaveRoom(){if(!confirm('確定離開？'))return;Object.values(connections).forEach(c=>c.close());Object.values(audioConns).forEach(c=>c.close());if(localStream)localStream.getTracks().forEach(t=>t.stop());if(watchId)navigator.geolocation.clearWatch(watchId);if(sessionInterval)clearInterval(sessionInterval);if(animFrame)cancelAnimationFrame(animFrame);clearTimeout(waveTimer);peer?.destroy();location.reload();}
 function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+applyPowerMode();
 </script>
 </body>
 </html>
